@@ -212,6 +212,9 @@
     <ClCompile Include="sfml.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Animation.h" />
+    <ClInclude Include="Assets.h" />
+    <ClInclude Include="Command.h" />
     <ClInclude Include="Components.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="EntityManager.h" />
