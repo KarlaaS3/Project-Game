@@ -8,9 +8,9 @@
 #include <iostream>
 
 
-const sf::Time Game::TIME_PER_FRAME = sf::seconds((1.f / 60.f));
+const sf::Time GameEngine::TIME_PER_FRAME = sf::seconds((1.f / 60.f));
 
-void Game::run() {
+void GameEngine::run() {
     sf::Clock clock;
     sf::Time timeSinceLastUpdate = sf::Time::Zero;
 
@@ -43,7 +43,7 @@ void Game::run() {
     }
 }
 
-void Game::sMovement(sf::Time dt) {
+void GameEngine::sMovement(sf::Time dt) {
 
     for (auto &e: entityManager.getEntities()) {
         auto &tfm = e->getComponent<CTransform>();
@@ -54,7 +54,7 @@ void Game::sMovement(sf::Time dt) {
 }
 
 
-void Game::sRender() {
+void GameEngine::sRender() {
     window.clear(sf::Color(100, 100, 255));
 
     for (auto &e: entityManager.getEntities()) {
@@ -69,7 +69,7 @@ void Game::sRender() {
 }
 
 
-void Game::sUpdate(sf::Time dt) {
+void GameEngine::sUpdate(sf::Time dt) {
 
     // update entity manager
     entityManager.update();
@@ -85,7 +85,7 @@ void Game::sUpdate(sf::Time dt) {
 }
 
 
-void Game::sUserInput() {
+void GameEngine::sUserInput() {
  
     sf::Event event;
     while (window.pollEvent(event)) {
@@ -98,7 +98,7 @@ void Game::sUserInput() {
 }
 
 
-void Game::init(const std::string &path) {
+void GameEngine::init(const std::string &path) {
     //
     loadConfigFromFile(path);
     window.create(sf::VideoMode(windowSize.x, windowSize.y), "GEX Engine");
@@ -110,7 +110,7 @@ void Game::init(const std::string &path) {
  
 
 
-sf::FloatRect Game::getViewBounds() {
+sf::FloatRect GameEngine::getViewBounds() {
     auto view = window.getView();
     return sf::FloatRect(
             (view.getCenter().x - view.getSize().x / 2.f), (view.getCenter().y - view.getSize().y / 2.f),
@@ -118,13 +118,13 @@ sf::FloatRect Game::getViewBounds() {
 }
 
 
-void Game::sCollision() {
+void GameEngine::sCollision() {
 
    
 }
 
 
-void Game::keepInBounds(Entity& e)
+void GameEngine::keepInBounds(Entity& e)
 {
     if (e.hasComponent<CCollision>()) {
         auto  cr = e.getComponent<CCollision>().radius;
@@ -144,7 +144,7 @@ void Game::keepInBounds(Entity& e)
 }
 
 
-void Game::adjustPlayerPosition() {
+void GameEngine::adjustPlayerPosition() {
     auto vb = getViewBounds();
 
     auto &player_pos = player->getComponent<CTransform>().pos;
@@ -157,7 +157,7 @@ void Game::adjustPlayerPosition() {
     player_pos.y = std::min(player_pos.y, (vb.top + vb.height) - player_cr - 5);
 }
 
-void Game::loadConfigFromFile(const std::string &path) {
+void GameEngine::loadConfigFromFile(const std::string &path) {
     std::ifstream config(path);
     if (config.fail()) {
         std::cerr << "Open file " << path << " failed\n";
@@ -205,13 +205,13 @@ void Game::loadConfigFromFile(const std::string &path) {
 }
 
 
-Game::Game(
+GameEngine::GameEngine(
         const std::string &path) {
     init(path);
 }
 
 
-void Game::updateStatistics(sf::Time dt) {
+void GameEngine::updateStatistics(sf::Time dt) {
     statisticsUpdateTime += dt;
     statisticsNumFrames += 1;
     if (statisticsUpdateTime >= sf::seconds(1.0f)) {

@@ -21,7 +21,7 @@ struct PlayerConfig {
 };
 
 
-class Game {
+class GameEngine {
 private:
     const static sf::Time TIME_PER_FRAME;
 
@@ -58,7 +58,7 @@ private:
 
 public:
 
-    Game(const std::string &path);
+    GameEngine(const std::string &path);
     void run();
 
 };

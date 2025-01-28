@@ -27,7 +27,7 @@
 
 int main()
 {
-    Game game("../config.txt");
+    GameEngine game("../config.txt");
     game.run();
     return 0;
 }
