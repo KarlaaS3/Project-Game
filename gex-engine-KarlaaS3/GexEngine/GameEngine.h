@@ -1,67 +1,47 @@
-//
-// Created by David Burchill on 2023-09-27.
-//
+#include "Assets.h"
 
-#ifndef BREAKOUT_GAME_H
-#define BREAKOUT_GAME_H
+#include <memory>
+#include <map>
 
-#include <SFML/System/Time.hpp>
-#include <SFML/Graphics.hpp>
-#include "EntityManager.h"
-#include "Entity.h"
+class Scene;
 
+using SceneMap = std::map<std::string, std::shared_ptr<Scene>>;
 
-struct PlayerConfig {
-    float                       radius{30};
-    float                       speed{200};
-    sf::Color                   fillColor{255,255,0};
-    sf::Color                   outlineColor{255,255,255};
-    float                       outlineThickness{3};
-    int                         nVerticies{3};
-};
+class GameEngine
+{
 
+public:
+	sf::RenderWindow	        _window;
+	std::string			        _currentScene;
+	SceneMap			        _sceneMap;
+	size_t				        _simulationSpeed{ 1 };
+	bool				        _running{ true };
 
-class GameEngine {
-private:
-    const static sf::Time TIME_PER_FRAME;
+	// stats
+	sf::Text					_statisticsText;
+	sf::Time					_statisticsUpdateTime{ sf::Time::Zero };
+	unsigned int				_statisticsNumFrames{ 0 };
 
-    sf::Vector2u                windowSize{1280,768};
-    sf::RenderWindow            window;
-    EntityManager               entityManager;
-    sf::Font                    font;
-    sPtrEntt                    player{nullptr};
-
-    PlayerConfig                playerConfig;
-    bool                        isRunning{true};
-    bool                        isPaused{false};
-
-    // stats
-    sf::Text                    statisticsText;
-    sf::Time                    statisticsUpdateTime{sf::Time::Zero};
-    unsigned int                statisticsNumFrames{0};
-
-    // systems
-    void                        sMovement(sf::Time dt);
-    void                        sCollision();
-    void                        sRender();
-    void                        sUpdate(sf::Time dt);
-    void                        sUserInput();
-
-
-    // helper functions
-    void                        keepInBounds(Entity &e);
-    void                        adjustPlayerPosition();
-    void                        init(const std::string &path);
-    void                        loadConfigFromFile(const std::string &path);
-    void                        updateStatistics(sf::Time dt);
-    sf::FloatRect               getViewBounds();
+public:
+	void					init(const std::string& path);
+	void					update();
+	void					sUserInput();
+	std::shared_ptr<Scene>	currentScene();
 
 public:
 
-    GameEngine(const std::string &path);
-    void run();
-
+	GameEngine(const std::string& path);
+	;
+	void				changeScene(const std::string& sceneName,
+		std::shared_ptr<Scene> scene,
+		bool endCurrentScene = false);
+	void				quit();
+	void				run();
+	void				quitLevel();
+	void				backLevel();
+	sf::RenderWindow& window();
+	sf::Vector2f		windowSize() const;
+	bool				isRunning();
+	void				loadConfigFromFile(const std::string& path,
+		unsigned int& width, unsigned int& height) const;
 };
-
-
-#endif //BREAKOUT_GAME_H
