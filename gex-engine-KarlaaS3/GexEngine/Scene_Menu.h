@@ -17,8 +17,7 @@ private:
 public:
 
 	Scene_Menu(GameEngine* gameEngine);
-	void init();
-	void onEnd() override;
+
 	void update(sf::Time dt) override;
 
 	void sRender() override;

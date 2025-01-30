@@ -22,7 +22,7 @@ struct LevelConfig {
     sf::Time    fireInterval{ sf::seconds(5) };
 };
 
-class Scene_Planes : public Scene
+class Scene_Level1 : public Scene
 {
     sPtrEntt                            _player{ nullptr };
     sf::View                            _worldView; // camera
@@ -74,7 +74,7 @@ class Scene_Planes : public Scene
     void                    drawEntt(sPtrEntt e);
 
 public:
-    Scene_Planes(GameEngine* gameEngine, const std::string& levelPath);
+    Scene_Level1(GameEngine* gameEngine, const std::string& levelPath);
     void		            update(sf::Time dt) override;
     void		            sDoAction(const Command& command) override;
     void		            sRender() override;
