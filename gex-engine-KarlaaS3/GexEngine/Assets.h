@@ -44,7 +44,6 @@ private:
     std::map<std::string, sf::Texture>                          _textures;
 
     std::map<std::string, Animation>                            _animationMap;
-    std::map<std::string, std::vector<sf::IntRect>>             _frameSets;
 
     void loadFonts(const std::string& path);
     void loadTextures(const std::string& path);

@@ -1,0 +1,44 @@
+Window 1280 720 60 0
+
+Font Arial 		../assets/fonts/arial.ttf  
+Font Mario 		../assets/fonts/arial.ttf  
+Font Megaman 	../assets/fonts/megaman.ttf  
+
+
+Texture TexStand 	../assets/mario/stand.png
+Texture TexRun      ../assets/mario/MarioRun.png
+Texture TexAir 		../assets/mario/jump.png
+Texture TexBuster 	../assets/megaman/buster.png
+Texture TexExplode 	../assets/misc/explosion.png
+Texture TexCoin 	../assets/misc/coinspin.png
+Texture TexBrick 	../assets/mario/brick.png
+Texture TexQ 		../assets/mario/questions.png
+Texture TexQ2 		../assets/mario/question2.png
+Texture TexPipeS 	../assets/mario/pipesmall.png
+Texture TexPipeT 	../assets/mario/pipetall.png
+Texture TexCloudB 	../assets/mario/cloudbig.png
+Texture TexCloudS 	../assets/mario/cloudsmall.png
+Texture TexBush		../assets/mario/bush.png
+Texture TexBushBig 	../assets/mario/bushbig.png
+Texture TexGround 	../assets/mario/ground.png
+Texture TexBlock 	../assets/mario/block.png
+Texture TexPole 	../assets/mario/flagpole.png
+Texture TexPoleTop 	../assets/mario/flagtop.png
+Texture TexFlag 	../assets/mario/flag.png
+Texture TexMenu         ../assets/mario/menu.png
+Texture Background      ../assets/mario/Background.jpg
+
+Animation Stand 		TexStand 	1 	0 
+Animation Run 			TexRun 		8 	5
+Animation Air			TexAir		1	0
+Animation Brick			TexBrick	1	0
+Animation Block			TexBlock	1	0
+Animation Question		TexQ		4	10
+Animation Ground		TexGround	1	0
+Animation PipeTall		TexPipeT	1	0
+Animation BushBig		TexBushBig	1	0
+Animation CloudBig		TexCloudB	1	0
+Animation CloudSmall	TexCloudS	1	0
+Animation Buster		TexBuster	1	0
+Animation Explosion		TexExplode	16 	4
+Animation Coin			TexCoin		13	2

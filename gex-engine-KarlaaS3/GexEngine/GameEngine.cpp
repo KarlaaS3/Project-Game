@@ -8,64 +8,24 @@
 #include <cstdlib>
 #include <iostream>
 
-
-GameEngine::GameEngine(const std::string& path)
-{
-	Assets::getInstance().loadFromFile("../config.txt");
-	init(path);
-}
-
-
 void GameEngine::init(const std::string& path)
 {
-	unsigned int width;
-	unsigned int height;
+	unsigned int width = 800;
+	unsigned int height = 600;
 	loadConfigFromFile(path, width, height);
+	_window.create(sf::VideoMode(width, height), "Game Engine");
+	_window.setFramerateLimit(60);
+	_sceneMap["MENU"] = std::make_shared<Scene_Menu>(this);
+	_sceneMap["LEVEL1"] = std::make_shared<Scene_Level1>(this);
+	_currentScene = "MENU";
+	
 
-
-	_window.create(sf::VideoMode(width, height), "Not Mario");
-
-	_statisticsText.setFont(Assets::getInstance().getFont("main"));
-	_statisticsText.setPosition(15.0f, 5.0f);
-	_statisticsText.setCharacterSize(15);
-
-	changeScene("MENU", std::make_shared<Scene_Menu>(this));
-}
-
-void GameEngine::loadConfigFromFile(const std::string& path, unsigned int& width, unsigned int& height) const {
-	std::ifstream config(path);
-	if (config.fail()) {
-		std::cerr << "Open file " << path << " failed\n";
-		config.close();
-		exit(1);
-	}
-	std::string token{ "" };
-	config >> token;
-	while (!config.eof()) {
-		if (token == "Window") {
-			config >> width >> height;
-		}
-		else if (token[0] == '#') {
-			std::string tmp;
-			std::getline(config, tmp);
-			std::cout << tmp << "\n";
-		}
-
-		if (config.fail()) {
-			config.clear(); // clear error on stream
-			std::cout << "*** Error reading config file\n";
-		}
-		config >> token;
-	}
-	config.close();
 }
 
 void GameEngine::update()
 {
-
 	//sUserInput();
 	//currentScene()->update();
-
 }
 
 void GameEngine::sUserInput()
@@ -81,10 +41,11 @@ void GameEngine::sUserInput()
 			if (currentScene()->getActionMap().contains(event.key.code))
 			{
 				const std::string actionType = (event.type == sf::Event::KeyPressed) ? "START" : "END";
-				currentScene()->doAction(Command(currentScene()->getActionMap().at(event.key.code), actionType));
+				currentScene()->doAction(Command{ actionType, currentScene()->getActionMap().at(event.key.code) });
 			}
-		}
+		}	
 	}
+
 }
 
 std::shared_ptr<Scene> GameEngine::currentScene()
@@ -92,47 +53,52 @@ std::shared_ptr<Scene> GameEngine::currentScene()
 	return _sceneMap.at(_currentScene);
 }
 
+GameEngine::GameEngine(const std::string& path)
+{
+	Assets::getInstance().loadFromFile("../config.txt");
+	init(path);
+
+}
+
 void GameEngine::changeScene(const std::string& sceneName, std::shared_ptr<Scene> scene, bool endCurrentScene)
 {
 	if (endCurrentScene)
+	{
 		_sceneMap.erase(_currentScene);
-
-	if (!_sceneMap.contains(sceneName))
+	}
+	if(!_sceneMap.contains(sceneName))
 		_sceneMap[sceneName] = scene;
-
 	_currentScene = sceneName;
 }
-
 
 void GameEngine::quit()
 {
 	_window.close();
 }
 
-
 void GameEngine::run()
 {
-	const sf::Time SPF = sf::seconds(1.0f / 60.f);  // seconds per frame for 60 fps 
-
 	sf::Clock clock;
 	sf::Time timeSinceLastUpdate = sf::Time::Zero;
+	sf::Time timePerFrame = sf::seconds(1.f / 60.f);
 
 	while (isRunning())
 	{
-		sUserInput();								// get user input
-
-		timeSinceLastUpdate += clock.restart();
-		while (timeSinceLastUpdate > SPF)
+		sf::Time dt = clock.restart();
+		timeSinceLastUpdate += dt;
+		while (timeSinceLastUpdate > timePerFrame)
 		{
-			currentScene()->update(SPF);			// update world
-			timeSinceLastUpdate -= SPF;
+			timeSinceLastUpdate -= timePerFrame;
+			sUserInput();
+			update();
 		}
-
-		window().clear(sf::Color::Cyan);
-		currentScene()->sRender();					// render world
-		window().display();
+		_window.clear();
+		currentScene()->sRender();
+		_window.display();
 	}
+	quit();
 }
+
 
 void GameEngine::quitLevel()
 {
@@ -141,21 +107,60 @@ void GameEngine::quitLevel()
 
 void GameEngine::backLevel()
 {
-	changeScene("MENU", nullptr, false);
+	changeScene("MENU", nullptr, false);	
 }
-
 
 sf::RenderWindow& GameEngine::window()
 {
 	return _window;
 }
 
-sf::Vector2f GameEngine::windowSize() const {
+sf::Vector2f GameEngine::windowSize() const
+{
 	return sf::Vector2f{ _window.getSize() };
 }
 
-
 bool GameEngine::isRunning()
 {
+
 	return (_running && _window.isOpen());
+}
+
+void GameEngine::loadConfigFromFile(const std::string& path, unsigned int& width, unsigned int& height) const
+{
+	std::ifstream config(path);
+	if (config.fail()) {
+		std::cerr << "Open file " << path << " failed\n";
+		exit(1);
+	}
+
+	std::string token;
+	while (config >> token) {
+		if (token == "Window") {
+			config >> width >> height;
+		}
+		else if (token == "Font") {
+			std::string name, path;
+			config >> name >> path;
+			Assets::getInstance().addFont(name, path);
+		}
+		else if (token == "Sound") {
+			std::string name, path;
+			config >> name >> path;
+			Assets::getInstance().addSound(name, path);
+		}
+		else if (token == "Texture") {
+			std::string name, path;
+			config >> name >> path;
+			Assets::getInstance().addTexture(name, path);
+		}
+		else if (token[0] == '#') {
+			config.ignore(std::numeric_limits<std::streamsize>::max(), '\n');  // Ignore comments
+		}
+		else {
+			std::cerr << "Unknown token in config file: " << token << "\n";
+		}
+	}
+
+	config.close();
 }

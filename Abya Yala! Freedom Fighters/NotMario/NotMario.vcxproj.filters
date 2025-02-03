@@ -15,10 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Entity.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="EntityManager.cpp">
+    <ClCompile Include="Action.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Animation.cpp">
@@ -27,10 +24,13 @@
     <ClCompile Include="Assets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Command.cpp">
+    <ClCompile Include="Entity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="EntityManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Physics.cpp">
@@ -42,23 +42,32 @@
     <ClCompile Include="Scene_Menu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MusicPlayer.cpp">
+    <ClCompile Include="Scene_Play.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Scene_Level1.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SoundPlayer.cpp">
+    <ClCompile Include="source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Utilities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine.cpp">
+    <ClCompile Include="Vec2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Action.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Components.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -68,41 +77,26 @@
     <ClInclude Include="EntityManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Assets.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Animation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Command.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene_Menu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene.h">
+    <ClInclude Include="GameEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Physics.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MusicPlayer.h">
+    <ClInclude Include="Scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene_Level1.h">
+    <ClInclude Include="Scene_Menu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SoundPlayer.h">
+    <ClInclude Include="Scene_Play.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Utilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine.h">
+    <ClInclude Include="Vec2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\config.txt" />
   </ItemGroup>
 </Project>

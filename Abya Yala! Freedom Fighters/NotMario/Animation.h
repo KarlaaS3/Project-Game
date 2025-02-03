@@ -1,12 +1,12 @@
+#pragma once
+
+#include "Common.h"
 
 
-#ifndef ANIMATION_H
-#define ANIMATION_H
-#include <SFML/Graphics.hpp>
 #include <vector>
 
-
-class Animation {
+class Animation
+{
 
 private:
 	sf::Sprite	m_sprite;
@@ -23,14 +23,11 @@ public:
 	Animation(const std::string& name, const sf::Texture& t);
 	Animation(const std::string& name, const sf::Texture& t, size_t frameCount, size_t speed);
 
-    void                    update(sf::Time dt);
-    bool                    hasEnded() const;
-    const std::string&      getName() const;
-    sf::Sprite&             getSprite();
-    sf::Vector2f            getBB() const;
+	void				update(bool repeat = true);
+	bool				hasEnded() const;
+	const std::string&	getName() const;
+	const Vec2&			getSize() const;
+	sf::Sprite&			getSprite();
+
 };
 
-
-
-
-#endif //ANIMATION_H

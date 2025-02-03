@@ -9,7 +9,6 @@ using SceneMap = std::map<std::string, std::shared_ptr<Scene>>;
 
 class GameEngine
 {
-
 public:
 	sf::RenderWindow	        _window;
 	std::string			        _currentScene;
