@@ -183,32 +183,24 @@ void Scene_Play::sCollision() {
     }
 }
 
-
 void Scene_Play::sRender() {
-    // background changes if paused
+    // Background color (only visible if there's transparency)
     static const sf::Color background(100, 100, 255);
     static const sf::Color pauseBackground(50, 50, 150);
     m_game->window().clear((m_isPaused ? pauseBackground : background));
 
-    // set the view to center on the player
-    // this is a side scroller so only worry about X axis
-    auto&pPos = m_player->getComponent<CTransform>().pos;
-    float centerX = std::max(m_game->window().getSize().x / 2.f, pPos.x);
-    sf::View view = m_game->window().getView();
-    view.setCenter(centerX, m_game->window().getSize().y - view.getCenter().y);
-    m_game->window().setView(view);
+    // **Always use the default view to keep everything static**
+    m_game->window().setView(m_game->window().getDefaultView());
 
-	// Draw the background sprite
-	m_game->window().draw(m_backgroundSprite);
+    // Draw the background image (this will stay fixed)
+    m_game->window().draw(m_backgroundSprite);
 
-
-    // draw all entities
+    // Draw all entities
     if (m_drawTextures) {
-        for (auto e: m_entityManager.getEntities()) {
+        for (auto e : m_entityManager.getEntities()) {
             if (e->hasComponent<CAnimation>()) {
-                auto&transform = e->getComponent<CTransform>();
-
-                auto&animation = e->getComponent<CAnimation>().animation;
+                auto& transform = e->getComponent<CTransform>();
+                auto& animation = e->getComponent<CAnimation>().animation;
                 animation.getSprite().setRotation(transform.angle);
                 animation.getSprite().setPosition(transform.pos.x, transform.pos.y);
                 animation.getSprite().setScale(transform.scale.x, transform.scale.y);
@@ -217,12 +209,12 @@ void Scene_Play::sRender() {
         }
     }
 
-    // draw all collisioni bound boxes
+    // Draw collision boxes (debugging)
     if (m_drawCollision) {
-        for (auto e: m_entityManager.getEntities()) {
+        for (auto e : m_entityManager.getEntities()) {
             if (e->hasComponent<CBoundingBox>()) {
-                auto&box = e->getComponent<CBoundingBox>();
-                auto&transform = e->getComponent<CTransform>();
+                auto& box = e->getComponent<CBoundingBox>();
+                auto& transform = e->getComponent<CTransform>();
                 sf::RectangleShape rect;
                 rect.setSize(sf::Vector2f(box.size.x, box.size.y));
                 rect.setOrigin(sf::Vector2f(box.halfSize.x, box.halfSize.y));
@@ -235,57 +227,44 @@ void Scene_Play::sRender() {
         }
     }
 
-    // draw grid
-    sf::VertexArray lines(sf::Lines);
-    sf::Text gridText;
-    gridText.setFont(m_game->assets().getFont("Arial"));
-    gridText.setCharacterSize(10);
-
+    // Draw grid (optional debugging)
     if (m_drawGrid) {
-        float left = view.getCenter().x - view.getSize().x / 2.f;
-        float right = left + view.getSize().x;
-        float top = view.getCenter().y - view.getSize().y / 2.f;
-        float bot = top + view.getSize().y;
+        sf::VertexArray lines(sf::Lines);
+        sf::Text gridText;
+        gridText.setFont(m_game->assets().getFont("Arial"));
+        gridText.setCharacterSize(10);
 
-        // aling grid to grid size
-        int nCols = static_cast<int>(view.getSize().x) / m_gridSize.x;
-        int nRows = static_cast<int>(view.getSize().y) / m_gridSize.y;
+        float left = 0;
+        float right = m_game->window().getSize().x;
+        float top = 0;
+        float bot = m_game->window().getSize().y;
 
-
-        // row and col # of bot left
-        const int ROW0 = 768;
-        int firstCol = static_cast<int>(left) / static_cast<int>(m_gridSize.x);
-        int lastRow = static_cast<int>(bot) / static_cast<int>(m_gridSize.y);
+        int nCols = static_cast<int>(m_game->window().getSize().x) / m_gridSize.x;
+        int nRows = static_cast<int>(m_game->window().getSize().y) / m_gridSize.y;
 
         lines.clear();
 
-        // vertical lines
-
-        for (int x{0}; x <= nCols; ++x) {
-            lines.append(sf::Vector2f((firstCol + x) * m_gridSize.x, top));
-            lines.append(sf::Vector2f((firstCol + x) * m_gridSize.x, bot));
+        // Vertical lines
+        for (int x = 0; x <= nCols; ++x) {
+            lines.append(sf::Vector2f(x * m_gridSize.x, top));
+            lines.append(sf::Vector2f(x * m_gridSize.x, bot));
         }
 
-
-        // horizontal lines
-        for (int y{0}; y <= nRows; ++y) {
-            lines.append(sf::Vertex(sf::Vector2f(left, ROW0 - (lastRow - y) * m_gridSize.y)));
-            lines.append(sf::Vertex(sf::Vector2f(right, ROW0 - (lastRow - y) * m_gridSize.y)));
+        // Horizontal lines
+        for (int y = 0; y <= nRows; ++y) {
+            lines.append(sf::Vector2f(left, y * m_gridSize.y));
+            lines.append(sf::Vector2f(right, y * m_gridSize.y));
         }
 
-
-        // grid coordinates
-        // (firstCol, lastRow) is the bottom left corner of the view
-        for (int x{0}; x <= nCols; ++x) {
-            for (int y{0}; y <= nRows; ++y) {
-                std::string label = std::string(
-                    "(" + std::to_string(firstCol + x) + ", " + std::to_string(lastRow - y) + ")");
+        // Grid coordinates
+        for (int x = 0; x <= nCols; ++x) {
+            for (int y = 0; y <= nRows; ++y) {
+                std::string label = "(" + std::to_string(x) + ", " + std::to_string(y) + ")";
                 gridText.setString(label);
-                gridText.setPosition((x + firstCol) * m_gridSize.x, ROW0 - (lastRow - y + 1) * m_gridSize.y);
+                gridText.setPosition(x * m_gridSize.x, y * m_gridSize.y);
                 m_game->window().draw(gridText);
             }
         }
-
 
         m_game->window().draw(lines);
     }

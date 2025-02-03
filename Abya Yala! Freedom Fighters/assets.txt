@@ -6,6 +6,7 @@ Font Megaman 	../assets/fonts/megaman.ttf
 
 
 Texture TexStand 	../assets/mario/stand.png
+Texture Walk            ../assets/mario/Walk.PNG
 Texture TexRun      ../assets/mario/MarioRun.png
 Texture TexAir 		../assets/mario/jump.png
 Texture TexBuster 	../assets/megaman/buster.png
@@ -26,7 +27,7 @@ Texture TexPole 	../assets/mario/flagpole.png
 Texture TexPoleTop 	../assets/mario/flagtop.png
 Texture TexFlag 	../assets/mario/flag.png
 Texture TexMenu         ../assets/mario/menu.png
-Texture Background      ../assets/mario/Background.jpg
+Texture Background      ../assets/mario/Background.jpeg
 
 Animation Stand 		TexStand 	1 	0 
 Animation Run 			TexRun 		8 	5
