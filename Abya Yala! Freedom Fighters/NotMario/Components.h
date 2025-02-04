@@ -10,6 +10,13 @@ struct Component
 	Component() = default;
 };
 
+struct CVelocity : public Component
+{
+	Vec2 vel{ 0.f, 0.f };
+
+	CVelocity() = default;
+	CVelocity(const Vec2& v) : vel(v) {}
+};
 
 struct CAnimation : public Component
 {
@@ -61,10 +68,15 @@ struct CBoundingBox : public Component
 {
 	Vec2 size{0.f, 0.f};
 	Vec2 halfSize{ 0.f, 0.f };
+	bool someFlag{ false };
+	bool anotherFlag{ false };
 
 	CBoundingBox() = default;
 	CBoundingBox(const Vec2& s) : size(s), halfSize(0.5f * s) 
 	{}
+	CBoundingBox(const Vec2& s, bool flag1, bool flag2)
+		: size(s), halfSize(0.5f * s), someFlag(flag1), anotherFlag(flag2) {
+	}
 };
 
 

@@ -5,6 +5,16 @@
 
 #include <string>
 
+namespace Collision {
+    bool checkAABB(const Vec2& pos1, const Vec2& size1, const Vec2& pos2, const Vec2& size2)
+    {
+        return (pos1.x - size1.x / 2 < pos2.x + size2.x / 2 &&
+            pos1.x + size1.x / 2 > pos2.x - size2.x / 2 &&
+            pos1.y - size1.y / 2 < pos2.y + size2.y / 2 &&
+            pos1.y + size1.y / 2 > pos2.y - size2.y / 2);
+    }
+}
+
 Scene_Play::Scene_Play(GameEngine* gameEngine, const std::string&levelPath)
     : Scene(gameEngine)
       , m_levelPath(levelPath) {
@@ -23,6 +33,7 @@ void Scene_Play::init(const std::string&levelPath) {
 	m_backgroundSprite.setTexture(backgroundTexture);
 
     loadLevel(levelPath);
+	spawnPlatform();
 }
 
 void Scene_Play::registerActions() {
@@ -139,6 +150,7 @@ void Scene_Play::sLifespan() {
 void Scene_Play::sEnemySpawner() {
 }
 
+/*
 void Scene_Play::sCollision() {
     // player with tile
     auto players = m_entityManager.getEntities("player");
@@ -182,6 +194,29 @@ void Scene_Play::sCollision() {
         }
     }
 }
+*/
+
+void Scene_Play::sCollision()
+{
+    for (auto player : m_entityManager.getEntities("player"))
+    {
+        auto& playerBox = player->getComponent<CBoundingBox>();
+        auto& playerTransform = player->getComponent<CTransform>();
+
+        for (auto ground : m_entityManager.getEntities("ground"))
+        {
+            auto& groundBox = ground->getComponent<CBoundingBox>();
+            auto& groundTransform = ground->getComponent<CTransform>();
+
+            // Check if the player collides with the ground
+            if (Collision::checkAABB(playerTransform.pos, playerBox.size, groundTransform.pos, groundBox.size))
+            {
+                playerTransform.pos.y = groundTransform.pos.y - playerBox.halfSize.y; // Snap player to ground
+                player->getComponent<CVelocity>().vel.y = 0; // Stop downward movement
+            }
+        }
+    }
+}
 
 void Scene_Play::sRender() {
     // Background color (only visible if there's transparency)
@@ -197,7 +232,7 @@ void Scene_Play::sRender() {
 
     // Draw all entities
     if (m_drawTextures) {
-        for (auto e : m_entityManager.getEntities()) {
+        for (auto e : m_entityManager.getEntities("player")) { // Only get player entity
             if (e->hasComponent<CAnimation>()) {
                 auto& transform = e->getComponent<CTransform>();
                 auto& animation = e->getComponent<CAnimation>().animation;
@@ -210,9 +245,10 @@ void Scene_Play::sRender() {
     }
 
     // Draw collision boxes (debugging)
+    // Draw only the player's collision box
     if (m_drawCollision) {
         for (auto e : m_entityManager.getEntities()) {
-            if (e->hasComponent<CBoundingBox>()) {
+            if (e->hasComponent<CInput>()) { // Only player
                 auto& box = e->getComponent<CBoundingBox>();
                 auto& transform = e->getComponent<CTransform>();
                 sf::RectangleShape rect;
@@ -439,4 +475,11 @@ void Scene_Play::spawnBullet(std::shared_ptr<Entity> e) {
         bullet->getComponent<CTransform>().vel.x = 10 * (e->getComponent<CState>().test(CState::isFacingLeft) ? -1 : 1);
         bullet->getComponent<CTransform>().vel.y = 0;
     }
+}
+
+void Scene_Play::spawnPlatform()
+{
+    auto ground = m_entityManager.addEntity("ground");
+    ground->addComponent<CTransform>(Vec2(10.35f, 10.0f)); // Center position
+    ground->addComponent<CBoundingBox>(Vec2(17.1f, 1.0f), false, false);
 }

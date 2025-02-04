@@ -27,7 +27,7 @@ Texture TexPole 	../assets/mario/flagpole.png
 Texture TexPoleTop 	../assets/mario/flagtop.png
 Texture TexFlag 	../assets/mario/flag.png
 Texture TexMenu         ../assets/mario/menu.png
-Texture Background      ../assets/mario/Background.jpeg
+Texture Background      ../assets/mario/Background1.jpg
 
 Animation Stand 		TexStand 	1 	0 
 Animation Run 			TexRun 		8 	5

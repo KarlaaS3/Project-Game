@@ -21,8 +21,8 @@ protected:
 	std::string					m_levelPath;
 	PlayerConfig				m_playerConfig;
 	bool						m_drawTextures{true};						
-	bool						m_drawCollision{false}; 
-	bool						m_drawGrid{false};
+	bool						m_drawCollision{true}; 
+	bool						m_drawGrid{true};
 	const Vec2					m_gridSize{ 64,64 };
 	sf::Text					m_gridText;
 	sf::Sprite                  m_backgroundSprite;
@@ -56,6 +56,8 @@ public:
 	void loadFromFile(const std::string& filename);
 	void spawnPlayer();
 	void spawnBullet(std::shared_ptr<Entity>);
+	void spawnEnemy(std::shared_ptr<Entity>);
+	void spawnPlatform();
 
 	 
 	
