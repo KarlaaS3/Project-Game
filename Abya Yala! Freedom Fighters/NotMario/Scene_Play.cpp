@@ -4,7 +4,7 @@
 #include "Physics.h"
 
 #include <string>
-
+/*
 namespace Collision {
     bool checkAABB(const Vec2& pos1, const Vec2& size1, const Vec2& pos2, const Vec2& size2)
     {
@@ -13,7 +13,7 @@ namespace Collision {
             pos1.y - size1.y / 2 < pos2.y + size2.y / 2 &&
             pos1.y + size1.y / 2 > pos2.y - size2.y / 2);
     }
-}
+}*/
 
 Scene_Play::Scene_Play(GameEngine* gameEngine, const std::string&levelPath)
     : Scene(gameEngine)
@@ -33,7 +33,6 @@ void Scene_Play::init(const std::string&levelPath) {
 	m_backgroundSprite.setTexture(backgroundTexture);
 
     loadLevel(levelPath);
-	spawnPlatform();
 }
 
 void Scene_Play::registerActions() {
@@ -62,7 +61,7 @@ void Scene_Play::update() {
 
     sMovement();
     sLifespan();
-    sCollision();
+    //sCollision();
     sAnimation();
 
     playerCheckState();
@@ -194,7 +193,7 @@ void Scene_Play::sCollision() {
         }
     }
 }
-*/
+
 
 void Scene_Play::sCollision()
 {
@@ -216,7 +215,7 @@ void Scene_Play::sCollision()
             }
         }
     }
-}
+}*/
 
 void Scene_Play::sRender() {
     // Background color (only visible if there's transparency)
@@ -476,10 +475,10 @@ void Scene_Play::spawnBullet(std::shared_ptr<Entity> e) {
         bullet->getComponent<CTransform>().vel.y = 0;
     }
 }
-
+/*
 void Scene_Play::spawnPlatform()
 {
     auto ground = m_entityManager.addEntity("ground");
     ground->addComponent<CTransform>(Vec2(10.35f, 10.0f)); // Center position
     ground->addComponent<CBoundingBox>(Vec2(17.1f, 1.0f), false, false);
-}
+}*/

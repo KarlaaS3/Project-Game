@@ -43,7 +43,7 @@ public:
 	void sAnimation();
 	void sLifespan();
 	void sEnemySpawner();
-	void sCollision();
+	//void sCollision();
 	
 	void sDebug();
 	void drawLine();
@@ -56,8 +56,8 @@ public:
 	void loadFromFile(const std::string& filename);
 	void spawnPlayer();
 	void spawnBullet(std::shared_ptr<Entity>);
-	void spawnEnemy(std::shared_ptr<Entity>);
-	void spawnPlatform();
+	//void spawnEnemy(std::shared_ptr<Entity>);
+	//void spawnPlatform();
 
 	 
 	
