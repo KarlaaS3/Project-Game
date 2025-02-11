@@ -43,7 +43,8 @@ public:
 	void sAnimation();
 	void sLifespan();
 	void sEnemySpawner();
-	//void sCollision();
+	void sCollision();
+	void createGround();
 	
 	void sDebug();
 	void drawLine();
