@@ -1,8 +1,0 @@
-# Game Config
-
-Window  1024 720
-Font ../assets/Menu.webp
-
-#       R    S      F(r,g,b),     O(r,g,b),   OT,  verticies
-Player 30   500    255  0  0    255  0  0     4        5
-

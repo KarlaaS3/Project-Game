@@ -3,11 +3,26 @@
 #include "Common.h"
 #include "Scene.h"
 #include <map>
-
 #include "EntityManager.h"
+#include <queue>
 
 class Scene_Play : public Scene
 {
+	struct SpawnPoint {
+		std::string     type;
+		float           y;
+		auto operator<=>(const SpawnPoint& other) const {
+			return  y <=> other.y;
+		}
+	};
+
+	struct EnemyConfig
+	{
+		float X{ 0.f }, Y{ 0.f }, CW{ 0.f }, CH{ 0.f };
+		float SPEED{ 0.f }, MAXSPEED{ 0.f }, JUMP{ 0.f }, GRAVITY{ 0.f };
+		std::string WEAPON;
+	};
+
 	struct PlayerConfig
 	{
 		float X{ 0.f }, Y{ 0.f }, CW{ 0.f }, CH{ 0.f };
@@ -20,10 +35,12 @@ protected:
 	std::shared_ptr<Entity>		m_player;
 	std::string					m_levelPath;
 	PlayerConfig				m_playerConfig;
+	EnemyConfig					m_enemyConfig;
+	std::priority_queue<SpawnPoint>     _spawnPoints;
 	bool						m_drawTextures{true};						
-	bool						m_drawCollision{true}; 
-	bool						m_drawGrid{true};
-	const Vec2					m_gridSize{ 64,64 };
+	bool						m_drawCollision{false}; 
+	bool						m_drawGrid{false};
+	const Vec2					m_gridSize{ 50,50 };
 	sf::Text					m_gridText;
 	sf::Sprite                  m_backgroundSprite;
 
@@ -57,8 +74,7 @@ public:
 	void loadFromFile(const std::string& filename);
 	void spawnPlayer();
 	void spawnBullet(std::shared_ptr<Entity>);
-	//void spawnEnemy(std::shared_ptr<Entity>);
-	//void spawnPlatform();
+	void spawnEnemy(const EnemyConfig& config);
 
 	 
 	

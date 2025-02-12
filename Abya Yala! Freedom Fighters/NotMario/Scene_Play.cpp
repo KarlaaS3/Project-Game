@@ -5,12 +5,11 @@
 
 #include <string>
 
-Scene_Play::Scene_Play(GameEngine* gameEngine, const std::string&levelPath)
+Scene_Play::Scene_Play(GameEngine* gameEngine, const std::string& levelPath)
     : Scene(gameEngine)
-      , m_levelPath(levelPath) {
+    , m_levelPath(levelPath) {
     init(m_levelPath);
 }
-
 
 
 void Scene_Play::init(const std::string& levelPath) {
@@ -53,11 +52,100 @@ void Scene_Play::update() {
 
     sMovement();
     sLifespan();
-    //sCollision();
+    sCollision();
     sAnimation();
 
     playerCheckState();
 }
+
+void Scene_Play::sRender() {
+        // Background color (only visible if there's transparency)
+        static const sf::Color background(100, 100, 255);
+        static const sf::Color pauseBackground(50, 50, 150);
+        m_game->window().clear((m_isPaused ? pauseBackground : background));
+
+        // **Always use the default view to keep everything static**
+        m_game->window().setView(m_game->window().getDefaultView());
+
+        // Draw the background image (this will stay fixed)
+        m_game->window().draw(m_backgroundSprite);
+
+        // Draw all entities
+        if (m_drawTextures) {
+            for (auto e : m_entityManager.getEntities()) {
+                if (e->hasComponent<CAnimation>()) {
+                    auto& transform = e->getComponent<CTransform>();
+                    auto& animation = e->getComponent<CAnimation>().animation;
+                    animation.getSprite().setRotation(transform.angle);
+                    animation.getSprite().setPosition(transform.pos.x, transform.pos.y);
+                    animation.getSprite().setScale(transform.scale.x, transform.scale.y);
+                    m_game->window().draw(animation.getSprite());
+                }
+            }
+        }
+
+        // Draw collision boxes (debugging)
+        if (m_drawCollision) {
+            for (auto e : m_entityManager.getEntities()) {
+                if (e->hasComponent<CBoundingBox>()) {
+                    auto& box = e->getComponent<CBoundingBox>();
+                    auto& transform = e->getComponent<CTransform>();
+                    sf::RectangleShape rect;
+                    rect.setSize(sf::Vector2f(box.size.x, box.size.y));
+                    rect.setOrigin(sf::Vector2f(box.halfSize.x, box.halfSize.y));
+                    rect.setPosition(transform.pos.x, transform.pos.y);
+                    rect.setFillColor(sf::Color(0, 0, 0, 0));
+                    rect.setOutlineColor(sf::Color(0, 255, 0));
+                    rect.setOutlineThickness(1.f);
+                    m_game->window().draw(rect);
+                }
+            }
+        }
+
+        // Draw grid (optional debugging)
+        if (m_drawGrid) {
+            sf::VertexArray lines(sf::Lines);
+            sf::Text gridText;
+            gridText.setFont(m_game->assets().getFont("Arial"));
+            gridText.setCharacterSize(10);
+
+            float left = 0;
+            float right = m_game->window().getSize().x;
+            float top = 0;
+            float bot = m_game->window().getSize().y;
+
+            int nCols = static_cast<int>(m_game->window().getSize().x) / m_gridSize.x;
+            int nRows = static_cast<int>(m_game->window().getSize().y) / m_gridSize.y;
+
+            lines.clear();
+
+            // Vertical lines
+            for (int x = 0; x <= nCols; ++x) {
+                lines.append(sf::Vector2f(x * m_gridSize.x, top));
+                lines.append(sf::Vector2f(x * m_gridSize.x, bot));
+            }
+
+            // Horizontal lines
+            for (int y = 0; y <= nRows; ++y) {
+                lines.append(sf::Vector2f(left, y * m_gridSize.y));
+                lines.append(sf::Vector2f(right, y * m_gridSize.y));
+            }
+
+            // Grid coordinates
+            for (int x = 0; x <= nCols; ++x) {
+                for (int y = 0; y <= nRows; ++y) {
+                    std::string label = "(" + std::to_string(x) + ", " + std::to_string(y) + ")";
+                    gridText.setString(label);
+                    gridText.setPosition(x * m_gridSize.x, y * m_gridSize.y);
+                    m_game->window().draw(gridText);
+                }
+            }
+
+            m_game->window().draw(lines);
+        }
+
+        m_game->window().display();
+   }
 
 
 void Scene_Play::sMovement() {
@@ -340,7 +428,21 @@ void Scene_Play::loadFromFile(const std::string& path) {
                 m_playerConfig.MAXSPEED >>
                 m_playerConfig.GRAVITY >>
                 m_playerConfig.WEAPON;
-        }
+        }/*
+		else if (token == "Enemy") {
+			EnemyConfig enemyConfig;
+			confFile >>
+				m_enemyConfig.X >>
+				m_enemyConfig.Y >>
+				m_enemyConfig.CW >>
+				m_enemyConfig.CH >>
+				m_enemyConfig.SPEED >>
+				m_enemyConfig.JUMP >>
+				m_enemyConfig.MAXSPEED >>
+				m_enemyConfig.GRAVITY >>
+				m_enemyConfig.WEAPON;
+			spawnEnemy(enemyConfig);
+		}*/
         else if (token == "#") {
             ; // ignore comments
             std::string tmp;
@@ -377,6 +479,20 @@ void Scene_Play::spawnBullet(std::shared_ptr<Entity> e) {
         bullet->getComponent<CTransform>().vel.y = 0;
     }
 }
+
+/*void Scene_Play::spawnEnemy(const EnemyConfig& config)
+{
+    auto enemy = m_entityManager.addEntity("enemy");
+    enemy->addComponent<CAnimation>(m_game->assets().getAnimation("EnemyRun"), true);
+    enemy->addComponent<CTransform>(gridToMidPixel(config.X, config.Y, enemy));
+    enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
+    enemy->addComponent<CState>();
+
+    
+
+    std::cout << "Spawned enemy at: " << config.X << ", " << config.Y << " with weapon: " << config.WEAPON << std::endl;
+}
+*/
 
 void Scene_Play::createGround() {
 
