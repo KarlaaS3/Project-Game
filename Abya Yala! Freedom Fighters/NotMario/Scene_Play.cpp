@@ -235,6 +235,7 @@ void Scene_Play::sCollision() {
     auto players = m_entityManager.getEntities("player");
     auto tiles = m_entityManager.getEntities("tile");
     auto ground = m_entityManager.getEntities("ground");
+    auto enemies = m_entityManager.getEntities("enemy");
 
     for (auto p : players) {
         p->getComponent<CState>().unSet(CState::isGrounded); // not grounded
@@ -384,6 +385,7 @@ void Scene_Play::loadLevel(const std::string& path) {
     loadFromFile(path);
 
     spawnPlayer();
+	spawnEnemy(m_enemyConfig);
 }
 
 void Scene_Play::loadFromFile(const std::string& path) {
@@ -428,7 +430,7 @@ void Scene_Play::loadFromFile(const std::string& path) {
                 m_playerConfig.MAXSPEED >>
                 m_playerConfig.GRAVITY >>
                 m_playerConfig.WEAPON;
-        }/*
+        }
 		else if (token == "Enemy") {
 			EnemyConfig enemyConfig;
 			confFile >>
@@ -441,8 +443,7 @@ void Scene_Play::loadFromFile(const std::string& path) {
 				m_enemyConfig.MAXSPEED >>
 				m_enemyConfig.GRAVITY >>
 				m_enemyConfig.WEAPON;
-			spawnEnemy(enemyConfig);
-		}*/
+		}
         else if (token == "#") {
             ; // ignore comments
             std::string tmp;
@@ -475,24 +476,35 @@ void Scene_Play::spawnBullet(std::shared_ptr<Entity> e) {
         bullet->addComponent<CTransform>(tx.pos);
         bullet->addComponent<CBoundingBox>(m_game->assets().getAnimation(m_playerConfig.WEAPON).getSize());
         bullet->addComponent<CLifespan>(50);
-        bullet->getComponent<CTransform>().vel.x = 10 * (e->getComponent<CState>().test(CState::isFacingLeft) ? -1 : 1);
+
+        bool isFacingLeft = e->getComponent<CState>().test(CState::isFacingLeft);
+        std::cout << "Bullet facing left: " << isFacingLeft << std::endl;
+
+        // Flip the animation
+        bullet->getComponent<CAnimation>().setFlipped(isFacingLeft);
+
+        bullet->getComponent<CTransform>().vel.x = 10 * (isFacingLeft ? -1 : 1);
         bullet->getComponent<CTransform>().vel.y = 0;
     }
 }
 
-/*void Scene_Play::spawnEnemy(const EnemyConfig& config)
+void Scene_Play::spawnEnemy(const EnemyConfig& config)
 {
     auto enemy = m_entityManager.addEntity("enemy");
-    enemy->addComponent<CAnimation>(m_game->assets().getAnimation("EnemyRun"), true);
+    enemy->addComponent<CAnimation>(m_game->assets().getAnimation("Enemy"), true);
     enemy->addComponent<CTransform>(gridToMidPixel(config.X, config.Y, enemy));
     enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
     enemy->addComponent<CState>();
 
+    // Set additional enemy properties like speed, gravity, etc.
+    auto& transform = enemy->getComponent<CTransform>();
+    transform.vel.x = config.SPEED;
+    transform.vel.y = config.GRAVITY;
     
 
     std::cout << "Spawned enemy at: " << config.X << ", " << config.Y << " with weapon: " << config.WEAPON << std::endl;
 }
-*/
+
 
 void Scene_Play::createGround() {
 

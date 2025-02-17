@@ -24,6 +24,7 @@ public:
 	Animation(const std::string& name, const sf::Texture& t, size_t frameCount, size_t speed);
 
 	void				update(bool repeat = true);
+	void                setFlipped(bool flip);
 	bool				hasEnded() const;
 	const std::string&	getName() const;
 	const Vec2&			getSize() const;

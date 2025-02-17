@@ -9,7 +9,7 @@ Texture TexStand 	../assets/mario/stand.png
 Texture Walk            ../assets/mario/Walk.PNG
 Texture TexRun      ../assets/mario/SoldierWalk.png
 Texture TexAir 		../assets/mario/jump.png
-Texture TexBuster 	../assets/mario/Arrow.png
+Texture TexArrow 	../assets/mario/Arrow.png
 Texture TexExplode 	../assets/misc/explosion.png
 Texture TexCoin 	../assets/misc/coinspin.png
 Texture TexBrick 	../assets/mario/brick.png
@@ -25,12 +25,12 @@ Texture TexEnemy           ../assets/mario/enemyWalk.png
 Texture Background      ../assets/mario/TreeBackground.png
 
 Animation Stand 		TexStand 	6 	5 
-Animation enemyRun              TexEnemy        8       5               
+Animation Enemy                 TexEnemy        8       5               
 Animation Run 			TexRun 		8 	5
 Animation Air			TexAir		6	5
 Animation Brick			TexBrick	1	0
 Animation Block			TexBlock	1	0
 Animation Question		TexQ		4	10
-Animation Buster		TexBuster	1	0
+Animation Arrow 		TexArrow	1	0
 Animation Explosion		TexExplode	16 	4
 Animation Coin			TexCoin		13	2

@@ -109,9 +109,20 @@ const sf::Texture& Assets::getTexture(const std::string& textureName) const
 }
 
 
-const Animation& Assets::getAnimation(const std::string& animationName) const
+/*const Animation& Assets::getAnimation(const std::string& animationName) const
 {
     return m_animatioMap.at(animationName);
+}*/
+
+const Animation& Assets::getAnimation(const std::string& animationName) const {
+    auto it = m_animatioMap.find(animationName);
+    if (it != m_animatioMap.end()) {
+        return it->second;
+    }
+    else {
+        std::cerr << "Animation not found: " << animationName << std::endl;
+        throw std::out_of_range("Animation not found: " + animationName);
+    }
 }
 
 const sf::Font& Assets::getFont(const std::string& fontName) const

@@ -64,5 +64,5 @@ Tile Brick              0       3
 
 
 #     gX, gY, cW, cH, sX, sY,  sM,  g,   bullet 
-Player 2   2  40  60   5  20  20  0.75  Buster
-Enemy  3   5  40  60   4  20  20  0.75  Buster
+Player 2   2  40  60   5  20  20  0.75  Arrow
+Enemy  3   5  40  60   4  20  20  0.75  Arrow

@@ -69,3 +69,22 @@ sf::Sprite& Animation::getSprite()
 {
 	return m_sprite;
 }
+
+void Animation::setFlipped(bool flip)
+{
+	std::cout << "setFlipped called, flip: " << flip << std::endl;
+
+	// Ensure the origin is centered before flipping
+	m_sprite.setOrigin(m_size.x / 2.f, m_size.y / 2.f);
+
+	if (flip)
+	{
+		std::cout << "Flipping sprite\n";
+		m_sprite.setScale(-1.f, 1.f);  // Flip horizontally
+	}
+	else
+	{
+		std::cout << "Setting normal scale\n";
+		m_sprite.setScale(1.f, 1.f);
+	}
+}

@@ -26,6 +26,10 @@ struct CAnimation : public Component
 
 	CAnimation(const Animation& animation, bool r)
 		:animation(animation), repeat(r) {}
+
+	void setFlipped(bool flip) {
+		animation.setFlipped(flip);
+	}
 };
 
 
