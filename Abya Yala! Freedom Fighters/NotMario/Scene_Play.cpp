@@ -11,7 +11,6 @@ Scene_Play::Scene_Play(GameEngine* gameEngine, const std::string& levelPath)
     init(m_levelPath);
 }
 
-
 void Scene_Play::init(const std::string& levelPath) {
     registerActions();
 
@@ -100,6 +99,11 @@ void Scene_Play::sRender() {
                     m_game->window().draw(rect);
                 }
             }
+        }
+
+        // Draw health bars for enemies
+        for (auto e : m_entityManager.getEntities("enemy")) {
+            drawHP(e);
         }
 
         // Draw grid (optional debugging)
@@ -359,8 +363,8 @@ void Scene_Play::sCollision() {
             auto overlap = Physics::getOverlap(e, a);
             if (overlap.x > 0 && overlap.y > 0) {
                 auto& enemyHealth = e->getComponent<CHealth>();
-                enemyHealth.current--; // Reduce health
-                if (enemyHealth.current <= 0) {
+                enemyHealth.remaining--; // Reduce health
+                if (enemyHealth.remaining <= 0) {
                     e->destroy(); // Enemy dies
                 }
                 else {
@@ -432,6 +436,29 @@ void Scene_Play::onEnd() {
 }
 
 void Scene_Play::drawLine() {
+}
+
+void Scene_Play::drawHP(std::shared_ptr<Entity> e) {
+    auto& health = e->getComponent<CHealth>();
+    auto& tx = e->getComponent<CTransform>();
+
+    // Create the health bar
+    sf::RectangleShape hpBar;
+    hpBar.setSize(sf::Vector2f(health.remaining * 0.5f, 5)); // Shorter bar
+    hpBar.setFillColor(sf::Color::Red);
+    hpBar.setPosition(tx.pos.x - 25, tx.pos.y - 40); // Higher position
+
+    // Create the health text
+    sf::Text hpText;
+    hpText.setFont(m_game->assets().getFont("Arial")); // Assuming "Arial" font is loaded
+    hpText.setString(std::to_string(health.remaining) + "/100");
+    hpText.setCharacterSize(10); // Adjusted size
+    hpText.setFillColor(sf::Color::White);
+    hpText.setPosition(tx.pos.x - 25, tx.pos.y - 50); // Higher position
+
+    // Draw the health bar and text
+    m_game->window().draw(hpBar);
+    m_game->window().draw(hpText);
 }
 
 void Scene_Play::sDebug() {
@@ -541,6 +568,7 @@ void Scene_Play::spawnPlayer() {
     m_player->addComponent<CTransform>(gridToMidPixel(m_playerConfig.X, m_playerConfig.Y, m_player));
     m_player->addComponent<CBoundingBox>(Vec2(m_playerConfig.CW, m_playerConfig.CH));
     m_player->addComponent<CState>();
+    m_player->addComponent<CLifespan>(3);
 }
 
 void Scene_Play::spawnBullet(std::shared_ptr<Entity> e) {
@@ -577,6 +605,7 @@ void Scene_Play::spawnEnemy(const EnemyConfig& config)
     enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
     enemy->addComponent<CState>();
     enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
+	enemy->addComponent<CHealth>(100); 
 
 
     // Set additional enemy properties like speed, gravity, etc.

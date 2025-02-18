@@ -68,6 +68,7 @@ public:
 	
 	void sDebug();
 	void drawLine();
+	void drawHP(sPtrEntt e);
 
 	void playerCheckState();
 
@@ -79,7 +80,9 @@ public:
 	void spawnBullet(std::shared_ptr<Entity>);
 	void spawnEnemy(const EnemyConfig& config);
 	void sEnemyBehavior();
+ 
 	bool checkPlatformEdge(std::shared_ptr<Entity> enemy);
+
 
 	 
 	

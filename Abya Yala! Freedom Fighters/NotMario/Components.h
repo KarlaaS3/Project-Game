@@ -127,7 +127,10 @@ struct CState : public Component
 		isGrounded		= 1,
 		isFacingLeft	= 1 << 1, 
 		isRunning		= 1 << 2,
-		isAttacking = 1 << 3
+		isAttacking     = 1 << 3,
+		isDead          = 1 << 4,
+		isPatrolling = 1 << 5,
+		isChasing = 1 << 6
 	};
 	unsigned int  state{ 0 };
 
@@ -141,10 +144,10 @@ struct CState : public Component
 
 struct CHealth : public Component
 {
-	int health{ 100 }; // Maximum health
-	int current{ 100 }; // Current health
+	int health{ 0 }; // Maximum health
+	int remaining{ 0 }; // Current health
 	CHealth() = default;
-	CHealth(int h) : health(h), current(h) {}
+	CHealth(int h) : health(h), remaining(h) {}
 };	
 
 struct CPlatformInfo : public Component {
