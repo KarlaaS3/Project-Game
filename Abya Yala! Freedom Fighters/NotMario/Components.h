@@ -126,7 +126,8 @@ struct CState : public Component
 	enum State {
 		isGrounded		= 1,
 		isFacingLeft	= 1 << 1, 
-		isRunning		= 1 << 2
+		isRunning		= 1 << 2,
+		isAttacking = 1 << 3
 	};
 	unsigned int  state{ 0 };
 
@@ -136,4 +137,19 @@ struct CState : public Component
 	void set(unsigned int x) { state |= x; }
 	void unSet(unsigned int x) { state &= ~x; }
 
+};
+
+struct CHealth : public Component
+{
+	int health{ 100 }; // Maximum health
+	int current{ 100 }; // Current health
+	CHealth() = default;
+	CHealth(int h) : health(h), current(h) {}
+};	
+
+struct CPlatformInfo : public Component {
+	float platformStartX{ 0.f };
+	float platformEndX{ 0.f };
+	CPlatformInfo() = default;
+	CPlatformInfo(float startX, float endX) : platformStartX(startX), platformEndX(endX) {}
 };

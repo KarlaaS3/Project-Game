@@ -20,7 +20,10 @@ class Scene_Play : public Scene
 	{
 		float X{ 0.f }, Y{ 0.f }, CW{ 0.f }, CH{ 0.f };
 		float SPEED{ 0.f }, MAXSPEED{ 0.f }, JUMP{ 0.f }, GRAVITY{ 0.f };
+		float DETECTION_RANGE{ 0.f }, ATTACK_RANGE{ 0.f };
 		std::string WEAPON;
+		float platformStartX{ 0.f };
+		float platformEndX{ 0.f };
 	};
 
 	struct PlayerConfig
@@ -59,7 +62,7 @@ public:
 	void sMovement();
 	void sAnimation();
 	void sLifespan();
-	void sEnemySpawner();
+	
 	void sCollision();
 	void createGround();
 	
@@ -75,6 +78,8 @@ public:
 	void spawnPlayer();
 	void spawnBullet(std::shared_ptr<Entity>);
 	void spawnEnemy(const EnemyConfig& config);
+	void sEnemyBehavior();
+	bool checkPlatformEdge(std::shared_ptr<Entity> enemy);
 
 	 
 	

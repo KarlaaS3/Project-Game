@@ -54,6 +54,7 @@ void Scene_Play::update() {
     sLifespan();
     sCollision();
     sAnimation();
+	sEnemyBehavior();
 
     playerCheckState();
 }
@@ -226,67 +227,13 @@ void Scene_Play::sLifespan() {
     }
 }
 
-void Scene_Play::sEnemyBehavior() {
-    auto players = m_entityManager.getEntities("player");
-    auto enemies = m_entityManager.getEntities("enemy");
-
-    for (auto e : enemies) {
-        auto& etx = e->getComponent<CTransform>();
-        auto& estate = e->getComponent<CState>();
-
-        // Apply gravity if not grounded
-        if (!estate.test(CState::isGrounded)) {
-            etx.vel.y += m_enemyConfig.GRAVITY;
-        }
-
-        // Move left or right within platform bounds
-        if (estate.test(CState::isFacingLeft)) {
-            etx.vel.x = -m_enemyConfig.SPEED;
-        }
-        else {
-            etx.vel.x = m_enemyConfig.SPEED;
-        }
-
-        // Ensure the enemy stays within platform boundaries (x:2,y:7 to x:9,y:7)
-        if (etx.pos.x <= gridToMidPixel(2, 7, e).x) {
-            estate.unSet(CState::isFacingLeft);
-        }
-        else if (etx.pos.x >= gridToMidPixel(9, 7, e).x) {
-            estate.set(CState::isFacingLeft);
-        }
-
-        // Check if the enemy is on the same platform as the player
-        bool playerOnSamePlatform = false;
-        for (auto p : players) {
-            auto& ptx = p->getComponent<CTransform>();
-
-            if (abs(etx.pos.y - ptx.pos.y) < 5 && ptx.pos.x >= gridToMidPixel(2, 7, p).x && ptx.pos.x <= gridToMidPixel(9, 7, p).x) {
-                // Player is on the same platform
-                playerOnSamePlatform = true;
-                break;
-            }
-        }
-
-        if (playerOnSamePlatform) {
-            estate.set(CState::isAttacking);
-            std::cout << "Enemy starts attacking!" << std::endl;
-        }
-        else {
-            estate.unSet(CState::isAttacking);
-        }
-
-        // Update position
-        etx.pos += etx.vel;
-    }
-}
-
-
 void Scene_Play::sCollision() {
     // player with tile
     auto players = m_entityManager.getEntities("player");
     auto tiles = m_entityManager.getEntities("tile");
     auto ground = m_entityManager.getEntities("ground");
     auto enemies = m_entityManager.getEntities("enemy");
+    auto arrows = m_entityManager.getEntities("arrow");
 
     for (auto p : players) {
         p->getComponent<CState>().unSet(CState::isGrounded); // not grounded
@@ -297,7 +244,6 @@ void Scene_Play::sCollision() {
                 auto prevOverlap = Physics::getPreviousOverlap(p, t);
                 auto& ptx = p->getComponent<CTransform>();
                 auto ttx = t->getComponent<CTransform>();
-
 
                 // collision is in the y direction
                 if (prevOverlap.x > 0) {
@@ -313,7 +259,6 @@ void Scene_Play::sCollision() {
                     }
                     p->getComponent<CTransform>().vel.y = 0.f;
                 }
-
 
                 // collision is in the x direction
                 if (prevOverlap.y > 0) {
@@ -345,7 +290,69 @@ void Scene_Play::sCollision() {
             }
         }
     }
+
+    for (auto e : enemies) {
+        e->getComponent<CState>().unSet(CState::isGrounded);
+        for (auto t : tiles) {
+            auto overlap = Physics::getOverlap(e, t);
+            if (overlap.x > 0 && overlap.y > 0) {
+                auto prevOverlap = Physics::getPreviousOverlap(e, t);
+                auto& etx = e->getComponent<CTransform>();
+                auto ttx = t->getComponent<CTransform>();
+
+                if (prevOverlap.x > 0) {
+                    if (etx.prevPos.y < ttx.prevPos.y) {
+                        etx.pos.y -= overlap.y;
+                        e->getComponent<CState>().set(CState::isGrounded);
+                    }
+                    else {
+                        etx.pos.y += overlap.y;
+                    }
+                    etx.vel.y = 0.f;
+                }
+            }
+        }
+
+        // Check collision with the ground
+        for (auto g : ground) {
+            auto overlap = Physics::getOverlap(e, g);
+            if (overlap.x > 0 && overlap.y > 0) {
+                auto prevOverlap = Physics::getPreviousOverlap(e, g);
+                auto& etx = e->getComponent<CTransform>();
+                auto& gtx = g->getComponent<CTransform>();
+
+                // Y-axis collision (ground)
+                if (prevOverlap.x > 0) {
+                    if (etx.prevPos.y < gtx.prevPos.y) {  // Enemy is above ground
+                        etx.pos.y -= overlap.y;
+                        e->getComponent<CState>().set(CState::isGrounded);
+                    }
+                    etx.vel.y = 0.f;
+                }
+            }
+        }
+    }
+
+    // Enemy hit by an arrow
+    for (auto e : enemies) {
+        for (auto a : arrows) {
+            auto overlap = Physics::getOverlap(e, a);
+            if (overlap.x > 0 && overlap.y > 0) {
+                auto& enemyHealth = e->getComponent<CHealth>();
+                enemyHealth.current--; // Reduce health
+                if (enemyHealth.current <= 0) {
+                    e->destroy(); // Enemy dies
+                }
+                else {
+                    e->getComponent<CState>().unSet(CState::isGrounded);
+                    e->getComponent<CTransform>().vel.y = 5.f; // Make the enemy fall
+                }
+                a->destroy(); // Destroy the arrow
+            }
+        }
+    }
 }
+
 
 
 
@@ -493,6 +500,10 @@ void Scene_Play::loadFromFile(const std::string& path) {
 				m_enemyConfig.JUMP >>
 				m_enemyConfig.MAXSPEED >>
 				m_enemyConfig.GRAVITY >>
+				m_enemyConfig.DETECTION_RANGE >>
+				m_enemyConfig.ATTACK_RANGE >>
+				m_enemyConfig.platformStartX >>
+				m_enemyConfig.platformEndX >>
 				m_enemyConfig.WEAPON;
 		}
         else if (token == "#") {
@@ -536,8 +547,14 @@ void Scene_Play::spawnBullet(std::shared_ptr<Entity> e) {
 
         bullet->getComponent<CTransform>().vel.x = 10 * (isFacingLeft ? -1 : 1);
         bullet->getComponent<CTransform>().vel.y = 0;
+
+        // Set the scale based on the velocity
+        if (std::abs(bullet->getComponent<CTransform>().vel.x) > 0.1f) {
+            bullet->getComponent<CTransform>().scale.x = (bullet->getComponent<CTransform>().vel.x > 0) ? 1 : -1;
+        }
     }
 }
+
 
 void Scene_Play::spawnEnemy(const EnemyConfig& config)
 {
@@ -546,12 +563,13 @@ void Scene_Play::spawnEnemy(const EnemyConfig& config)
     enemy->addComponent<CTransform>(gridToMidPixel(config.X, config.Y, enemy));
     enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
     enemy->addComponent<CState>();
+    enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
+
 
     // Set additional enemy properties like speed, gravity, etc.
     auto& transform = enemy->getComponent<CTransform>();
     transform.vel.x = config.SPEED;
     transform.vel.y = config.GRAVITY;
-    
 
     std::cout << "Spawned enemy at: " << config.X << ", " << config.Y << " with weapon: " << config.WEAPON << std::endl;
 }
