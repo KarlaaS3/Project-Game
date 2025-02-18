@@ -44,7 +44,6 @@ void Scene_Play::registerActions() {
     registerAction(sf::Keyboard::Space, "SHOOT");
 }
 
-
 void Scene_Play::update() {
     m_entityManager.update();
 
@@ -148,7 +147,6 @@ void Scene_Play::sRender() {
         m_game->window().display();
    }
 
-
 void Scene_Play::sMovement() {
     // player movement
     auto& pt = m_player->getComponent<CTransform>();
@@ -164,7 +162,6 @@ void Scene_Play::sMovement() {
         pt.vel.y = -m_playerConfig.JUMP;
     }
 
-
     // gravity
     pt.vel.y += m_playerConfig.GRAVITY;
     pt.vel.x = pt.vel.x * m_playerConfig.SPEED;
@@ -175,12 +172,35 @@ void Scene_Play::sMovement() {
     if (pt.vel.x > 0.1)
         m_player->getComponent<CState>().unSet(CState::isFacingLeft);
 
+    // Define the boundaries of the window
+    const float leftBoundary = 0.0f;
+    const float rightBoundary = static_cast<float>(m_game->window().getSize().x);
+    const float topBoundary = 0.0f;
+    const float bottomBoundary = static_cast<float>(m_game->window().getSize().y);
 
     // move all entities
     for (auto e : m_entityManager.getEntities()) {
         auto& tx = e->getComponent<CTransform>();
         tx.prevPos = tx.pos;
         tx.pos += tx.vel;
+
+        // Check collision with window boundaries
+        if (tx.pos.x < leftBoundary) {
+            tx.pos.x = leftBoundary;
+            tx.vel.x = 0;
+        }
+        if (tx.pos.x > rightBoundary) {
+            tx.pos.x = rightBoundary;
+            tx.vel.x = 0;
+        }
+        if (tx.pos.y < topBoundary) {
+            tx.pos.y = topBoundary;
+            tx.vel.y = 0;
+        }
+        if (tx.pos.y > bottomBoundary) {
+            tx.pos.y = bottomBoundary;
+            tx.vel.y = 0;
+        }
     }
 }
 
@@ -353,9 +373,6 @@ void Scene_Play::sCollision() {
     }
 }
 
-
-
-
 void Scene_Play::sDoAction(const Action& action) {
     // On Key Press
     if (action.type() == "START") {
@@ -397,7 +414,6 @@ void Scene_Play::sDoAction(const Action& action) {
     }
 }
 
-
 void Scene_Play::sAnimation() {
     // m_player->getComponent<CAnimation>().animation.update();
 
@@ -410,7 +426,6 @@ void Scene_Play::sAnimation() {
         }
     }
 }
-
 
 void Scene_Play::onEnd() {
     m_game->changeScene("MENU", nullptr, true);
@@ -520,7 +535,6 @@ void Scene_Play::loadFromFile(const std::string& path) {
     }
 }
 
-
 void Scene_Play::spawnPlayer() {
     m_player = m_entityManager.addEntity("player");
     m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Run"), true);
@@ -554,7 +568,6 @@ void Scene_Play::spawnBullet(std::shared_ptr<Entity> e) {
         }
     }
 }
-
 
 void Scene_Play::spawnEnemy(const EnemyConfig& config)
 {
@@ -655,9 +668,14 @@ void Scene_Play::sEnemyBehavior() {
 
         // Update enemy position
         etx.pos += etx.vel;
+
+        // Flip the animation based on the direction
+        if (std::abs(etx.vel.x) > 0.1f) {
+            etx.scale.x = (etx.vel.x > 0) ? 1 : -1;
+            e->getComponent<CAnimation>().setFlipped(etx.vel.x < 0);
+        }
     }
 }
-
 
 bool Scene_Play::checkPlatformEdge(std::shared_ptr<Entity> enemy) {
     auto& transform = enemy->getComponent<CTransform>();
@@ -678,7 +696,6 @@ bool Scene_Play::checkPlatformEdge(std::shared_ptr<Entity> enemy) {
 
     return false;
 }
-
 
 void Scene_Play::createGround() {
 
