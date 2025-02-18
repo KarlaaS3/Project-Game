@@ -226,7 +226,58 @@ void Scene_Play::sLifespan() {
     }
 }
 
-void Scene_Play::sEnemySpawner() {
+void Scene_Play::sEnemyBehavior() {
+    auto players = m_entityManager.getEntities("player");
+    auto enemies = m_entityManager.getEntities("enemy");
+
+    for (auto e : enemies) {
+        auto& etx = e->getComponent<CTransform>();
+        auto& estate = e->getComponent<CState>();
+
+        // Apply gravity if not grounded
+        if (!estate.test(CState::isGrounded)) {
+            etx.vel.y += m_enemyConfig.GRAVITY;
+        }
+
+        // Move left or right within platform bounds
+        if (estate.test(CState::isFacingLeft)) {
+            etx.vel.x = -m_enemyConfig.SPEED;
+        }
+        else {
+            etx.vel.x = m_enemyConfig.SPEED;
+        }
+
+        // Ensure the enemy stays within platform boundaries (x:2,y:7 to x:9,y:7)
+        if (etx.pos.x <= gridToMidPixel(2, 7, e).x) {
+            estate.unSet(CState::isFacingLeft);
+        }
+        else if (etx.pos.x >= gridToMidPixel(9, 7, e).x) {
+            estate.set(CState::isFacingLeft);
+        }
+
+        // Check if the enemy is on the same platform as the player
+        bool playerOnSamePlatform = false;
+        for (auto p : players) {
+            auto& ptx = p->getComponent<CTransform>();
+
+            if (abs(etx.pos.y - ptx.pos.y) < 5 && ptx.pos.x >= gridToMidPixel(2, 7, p).x && ptx.pos.x <= gridToMidPixel(9, 7, p).x) {
+                // Player is on the same platform
+                playerOnSamePlatform = true;
+                break;
+            }
+        }
+
+        if (playerOnSamePlatform) {
+            estate.set(CState::isAttacking);
+            std::cout << "Enemy starts attacking!" << std::endl;
+        }
+        else {
+            estate.unSet(CState::isAttacking);
+        }
+
+        // Update position
+        etx.pos += etx.vel;
+    }
 }
 
 
