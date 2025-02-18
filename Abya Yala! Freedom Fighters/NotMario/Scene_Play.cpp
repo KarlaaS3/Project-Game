@@ -574,6 +574,111 @@ void Scene_Play::spawnEnemy(const EnemyConfig& config)
     std::cout << "Spawned enemy at: " << config.X << ", " << config.Y << " with weapon: " << config.WEAPON << std::endl;
 }
 
+void Scene_Play::sEnemyBehavior() {
+    auto players = m_entityManager.getEntities("player");
+    auto enemies = m_entityManager.getEntities("enemy");
+
+    for (auto e : enemies) {
+        auto& etx = e->getComponent<CTransform>();
+        auto& estate = e->getComponent<CState>();
+        auto& enemyConfig = m_enemyConfig; // Enemy config
+
+        bool playerDetected = false;
+        bool playerInAttackRange = false;
+
+        for (auto p : players) {
+            auto& ptx = p->getComponent<CTransform>();
+            float distance = std::abs(etx.pos.x - ptx.pos.x);
+
+            // If player is within detection range, enemy gets active
+            if (distance < enemyConfig.DETECTION_RANGE) {
+                playerDetected = true;
+            }
+
+            // If within attack range, start attacking instead of moving towards the player
+            if (distance < enemyConfig.ATTACK_RANGE) {
+                playerInAttackRange = true;
+                estate.set(CState::isAttacking);
+                std::cout << "Enemy attacking!" << std::endl;
+            }
+            else {
+                estate.unSet(CState::isAttacking);
+            }
+        }
+
+        // If the player is in detection range but not in attack range, patrol back and forth
+        if (playerDetected && !playerInAttackRange) {
+            if (estate.test(CState::isFacingLeft)) {
+                etx.vel.x = -enemyConfig.SPEED;
+            }
+            else {
+                etx.vel.x = enemyConfig.SPEED;
+            }
+
+            // Check if the enemy has reached platform limits and switch direction
+            if (checkPlatformEdge(e)) {
+                if (estate.test(CState::isFacingLeft)) {
+                    estate.unSet(CState::isFacingLeft);
+                }
+                else {
+                    estate.set(CState::isFacingLeft);
+                }
+            }
+        }
+        // If attacking, move left and right instead of following the player
+        else if (playerInAttackRange) {
+            if (estate.test(CState::isFacingLeft)) {
+                etx.vel.x = -enemyConfig.SPEED / 2; // Move slightly left
+            }
+            else {
+                etx.vel.x = enemyConfig.SPEED / 2; // Move slightly right
+            }
+
+            // Change direction randomly to simulate enemy attacking motion
+            if (rand() % 100 < 3) { // 3% chance to change direction each frame
+                if (estate.test(CState::isFacingLeft)) {
+                    estate.unSet(CState::isFacingLeft);
+                }
+                else {
+                    estate.set(CState::isFacingLeft);
+                }
+            }
+        }
+        else {
+            etx.vel.x = 0; // If no player is nearby, enemy stays still
+        }
+
+        // Apply gravity if not grounded
+        if (!estate.test(CState::isGrounded)) {
+            etx.vel.y += enemyConfig.GRAVITY;
+        }
+
+        // Update enemy position
+        etx.pos += etx.vel;
+    }
+}
+
+
+bool Scene_Play::checkPlatformEdge(std::shared_ptr<Entity> enemy) {
+    auto& transform = enemy->getComponent<CTransform>();
+    auto& boundingBox = enemy->getComponent<CBoundingBox>();
+    auto& platformInfo = enemy->getComponent<CPlatformInfo>();
+
+    // Define an edge detection threshold (adjust based on tile sizes)
+    float edgeThreshold = 5.0f;
+
+    // Check if the enemy is near the left or right edge of its assigned platform
+    float leftEdge = transform.pos.x - boundingBox.halfSize.x;
+    float rightEdge = transform.pos.x + boundingBox.halfSize.x;
+
+    if (leftEdge <= platformInfo.platformStartX + edgeThreshold ||
+        rightEdge >= platformInfo.platformEndX - edgeThreshold) {
+        return true;  // Enemy is near the edge, should turn around
+    }
+
+    return false;
+}
+
 
 void Scene_Play::createGround() {
 
