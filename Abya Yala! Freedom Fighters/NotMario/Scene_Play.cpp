@@ -261,6 +261,7 @@ void Scene_Play::sCollision() {
     auto ground = m_entityManager.getEntities("ground");
     auto enemies = m_entityManager.getEntities("enemy");
     auto arrows = m_entityManager.getEntities("arrow");
+    auto bullets = m_entityManager.getEntities("bullet");
     auto coins = m_entityManager.getEntities("coin");
 
     for (auto p : players) {
@@ -368,6 +369,23 @@ void Scene_Play::sCollision() {
                 }
             }
         }
+
+        // Check collision with bullets
+        for (auto b : bullets) {
+            auto overlap = Physics::getOverlap(e, b);
+            if (overlap.x > 0 && overlap.y > 0) {
+                auto& enemyHealth = e->getComponent<CHealth>();
+                enemyHealth.remaining -= 20; // Reduce health
+                if (enemyHealth.remaining <= 0) {
+                    e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Death");
+                    e->destroy(); // Enemy dies
+                }
+                else {
+                    e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Hurt");
+                }
+                b->destroy(); // Destroy the bullet
+            }
+        }
     }
 
     // Enemy hit by an arrow
@@ -378,18 +396,19 @@ void Scene_Play::sCollision() {
                 auto& enemyHealth = e->getComponent<CHealth>();
                 enemyHealth.remaining--; // Reduce health
                 if (enemyHealth.remaining <= 0) {
+                    e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Death");
                     e->destroy(); // Enemy dies
                 }
                 else {
                     e->getComponent<CState>().unSet(CState::isGrounded);
                     e->getComponent<CTransform>().vel.y = 5.f; // Make the enemy fall
+                    e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Hurt");
                 }
                 a->destroy(); // Destroy the arrow
             }
         }
     }
 }
-
 
 void Scene_Play::sDoAction(const Action& action) {
     // On Key Press
@@ -596,7 +615,6 @@ void Scene_Play::loadFromFile(const std::string& path) {
     }
 }
 
-
 void Scene_Play::spawnPlayer() {
     m_player = m_entityManager.addEntity("player");
     m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Run"), true);
@@ -652,7 +670,6 @@ void Scene_Play::spawnEnemy(const EnemyConfig& config)
 }
 
 void Scene_Play::sEnemyBehavior() {
-
     auto players = m_entityManager.getEntities("player");
     auto enemies = m_entityManager.getEntities("enemy");
 
@@ -716,8 +733,8 @@ void Scene_Play::sEnemyBehavior() {
                     estate.set(CState::isFacingLeft);
                 }
             }
-        e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Attack");
-    }
+            e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Attack");
+        }
         else {
             etx.vel.x = 0; // If no player is nearby, enemy stays still
         }
@@ -733,9 +750,6 @@ void Scene_Play::sEnemyBehavior() {
             e->getComponent<CAnimation>().setFlipped(etx.vel.x < 0);
         }
     }
-}
-
-void Scene_Play::sEnemyCollision() {
 }
 
 bool Scene_Play::checkPlatformEdge(std::shared_ptr<Entity> enemy) {
