@@ -619,24 +619,19 @@ void Scene_Play::spawnEnemy(const EnemyConfig& config)
 void Scene_Play::sEnemyBehavior() {
     auto players = m_entityManager.getEntities("player");
     auto enemies = m_entityManager.getEntities("enemy");
-
     for (auto e : enemies) {
         auto& etx = e->getComponent<CTransform>();
         auto& estate = e->getComponent<CState>();
         auto& enemyConfig = m_enemyConfig; // Enemy config
-
         bool playerDetected = false;
         bool playerInAttackRange = false;
-
         for (auto p : players) {
             auto& ptx = p->getComponent<CTransform>();
             float distance = std::abs(etx.pos.x - ptx.pos.x);
-
             // If player is within detection range, enemy gets active
             if (distance < enemyConfig.DETECTION_RANGE) {
                 playerDetected = true;
             }
-
             // If within attack range, start attacking instead of moving towards the player
             if (distance < enemyConfig.ATTACK_RANGE) {
                 playerInAttackRange = true;
@@ -647,7 +642,6 @@ void Scene_Play::sEnemyBehavior() {
                 estate.unSet(CState::isAttacking);
             }
         }
-
         // If the player is in detection range but not in attack range, patrol back and forth
         if (playerDetected && !playerInAttackRange) {
             if (estate.test(CState::isFacingLeft)) {
@@ -656,7 +650,6 @@ void Scene_Play::sEnemyBehavior() {
             else {
                 etx.vel.x = enemyConfig.SPEED;
             }
-
             // Check if the enemy has reached platform limits and switch direction
             if (checkPlatformEdge(e)) {
                 if (estate.test(CState::isFacingLeft)) {
@@ -675,7 +668,6 @@ void Scene_Play::sEnemyBehavior() {
             else {
                 etx.vel.x = enemyConfig.SPEED / 2; // Move slightly right
             }
-
             // Change direction randomly to simulate enemy attacking motion
             if (rand() % 100 < 3) { // 3% chance to change direction each frame
                 if (estate.test(CState::isFacingLeft)) {
@@ -689,16 +681,13 @@ void Scene_Play::sEnemyBehavior() {
         else {
             etx.vel.x = 0; // If no player is nearby, enemy stays still
         }
-
         // Apply gravity if not grounded
         if (!estate.test(CState::isGrounded)) {
             etx.vel.y += enemyConfig.GRAVITY;
         }
-
         // Update enemy position
         etx.pos += etx.vel;
 
-        // Flip the animation based on the direction
         if (std::abs(etx.vel.x) > 0.1f) {
             etx.scale.x = (etx.vel.x > 0) ? 1 : -1;
             e->getComponent<CAnimation>().setFlipped(etx.vel.x < 0);

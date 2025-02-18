@@ -65,4 +65,4 @@ Tile Brick              0       3
 
 #     gX, gY, cW, cH, sX, sY,  sM,  g,   bullet 
 Player 2   2  40  60   5  20  20  0.75  Arrow
-Enemy  3   5  40  60   3  10  10  0.75  110  100 2 9  Arrow
+Enemy  3   5  40  60   1  10  5  0.75  200  150 2 9  Arrow
