@@ -49,7 +49,6 @@ void Scene_Menu::update()
 	//sRender();
 }
 
-
 void Scene_Menu::sRender()
 {
 	sf::View view = m_game->window().getView();
@@ -62,28 +61,37 @@ void Scene_Menu::sRender()
 	m_game->window().draw(m_backgroundSprite);
 
 	static const sf::Color selectedColor(255, 255, 255);
-	static const sf::Color normalColor(0, 0, 0);
+	static const sf::Color normalColor(255, 215, 0);
 
 	sf::Text footer("UP: W    DOWN: S   PLAY:D    QUIT: ESC",
 		m_game->assets().getFont("Megaman"), 20);
 	footer.setFillColor(normalColor);
 	footer.setPosition(32, 700);
 
+	// Center the title text
 	m_menuText.setFillColor(normalColor);
 	m_menuText.setString(m_title);
-	m_menuText.setPosition(70, 10);
+	sf::FloatRect titleBounds = m_menuText.getLocalBounds();
+	m_menuText.setOrigin(titleBounds.left + titleBounds.width / 2.0f, titleBounds.top + titleBounds.height / 2.0f);
+	m_menuText.setPosition(m_game->window().getSize().x / 2.0f, 50);
 	m_game->window().draw(m_menuText);
 
+	// Center the subtitle text
 	m_menuText.setFillColor(normalColor);
 	m_menuText.setString(m_subtitle);
-	m_menuText.setPosition(40, 80);
+	sf::FloatRect subtitleBounds = m_menuText.getLocalBounds();
+	m_menuText.setOrigin(subtitleBounds.left + subtitleBounds.width / 2.0f, subtitleBounds.top + subtitleBounds.height / 2.0f);
+	m_menuText.setPosition(m_game->window().getSize().x / 2.0f, 150);
 	m_game->window().draw(m_menuText);
 
+	// Draw menu options
 	for (size_t i{ 0 }; i < m_menuStrings.size(); ++i)
 	{
 		m_menuText.setFillColor((i == m_menuIndex ? selectedColor : normalColor));
-		m_menuText.setPosition(32, 32 + (i + 1) * 160);
 		m_menuText.setString(m_menuStrings.at(i));
+		sf::FloatRect menuBounds = m_menuText.getLocalBounds();
+		m_menuText.setOrigin(menuBounds.left + menuBounds.width / 2.0f, menuBounds.top + menuBounds.height / 2.0f);
+		m_menuText.setPosition(m_game->window().getSize().x / 2.0f, 250 + i * 100);
 		m_game->window().draw(m_menuText);
 	}
 

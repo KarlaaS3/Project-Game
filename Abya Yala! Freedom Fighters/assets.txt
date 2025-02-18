@@ -13,7 +13,7 @@ Texture TexArrow 	../assets/mario/Arrow.png
 Texture TexExplode 	../assets/misc/explosion.png
 Texture TexCoin 	../assets/misc/coinspin.png
 Texture TexBrick 	../assets/mario/brick.png
-Texture TexMenu         ../assets/mario/menu.png
+Texture TexMenu         ../assets/mario/TreeBackground.png
 Texture TexEnemy           ../assets/mario/enemyWalk.png
 Texture TexAttack       ../assets/mario/Attack.png
 Texture TexHurt       ../assets/mario/Hurt.png
