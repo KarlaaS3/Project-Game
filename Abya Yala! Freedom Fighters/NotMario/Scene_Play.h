@@ -68,7 +68,8 @@ public:
 	
 	void sDebug();
 	void drawLine();
-	void drawHP(sPtrEntt e);
+	void drawHP(std::shared_ptr<Entity> e);
+	void drawCoins();
 
 	void playerCheckState();
 
@@ -78,8 +79,10 @@ public:
 	void loadFromFile(const std::string& filename);
 	void spawnPlayer();
 	void spawnBullet(std::shared_ptr<Entity>);
+
 	void spawnEnemy(const EnemyConfig& config);
 	void sEnemyBehavior();
+	void sEnemyCollision();
  
 	bool checkPlatformEdge(std::shared_ptr<Entity> enemy);
 

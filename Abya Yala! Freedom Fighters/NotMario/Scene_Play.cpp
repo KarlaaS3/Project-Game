@@ -461,6 +461,11 @@ void Scene_Play::drawHP(std::shared_ptr<Entity> e) {
     m_game->window().draw(hpText);
 }
 
+void Scene_Play::drawCoins()
+{
+}
+
+
 void Scene_Play::sDebug() {
 }
 
@@ -617,14 +622,18 @@ void Scene_Play::spawnEnemy(const EnemyConfig& config)
 }
 
 void Scene_Play::sEnemyBehavior() {
+
     auto players = m_entityManager.getEntities("player");
     auto enemies = m_entityManager.getEntities("enemy");
+
     for (auto e : enemies) {
         auto& etx = e->getComponent<CTransform>();
         auto& estate = e->getComponent<CState>();
         auto& enemyConfig = m_enemyConfig; // Enemy config
+
         bool playerDetected = false;
         bool playerInAttackRange = false;
+
         for (auto p : players) {
             auto& ptx = p->getComponent<CTransform>();
             float distance = std::abs(etx.pos.x - ptx.pos.x);
@@ -693,6 +702,9 @@ void Scene_Play::sEnemyBehavior() {
             e->getComponent<CAnimation>().setFlipped(etx.vel.x < 0);
         }
     }
+}
+
+void Scene_Play::sEnemyCollision() {
 }
 
 bool Scene_Play::checkPlatformEdge(std::shared_ptr<Entity> enemy) {
