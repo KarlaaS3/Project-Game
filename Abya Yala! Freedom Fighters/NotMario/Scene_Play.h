@@ -43,6 +43,7 @@ protected:
 	bool						m_drawTextures{true};						
 	bool						m_drawCollision{false}; 
 	bool						m_drawGrid{false};
+	int                         collectedCoins{ 0 };
 	const Vec2					m_gridSize{ 50,50 };
 	sf::Text					m_gridText;
 	sf::Sprite                  m_backgroundSprite;
@@ -69,7 +70,7 @@ public:
 	void sDebug();
 	void drawLine();
 	void drawHP(std::shared_ptr<Entity> e);
-	void drawCoins();
+	void drawCoinsCounter();
 
 	void playerCheckState();
 
@@ -85,10 +86,6 @@ public:
 	void sEnemyCollision();
  
 	bool checkPlatformEdge(std::shared_ptr<Entity> enemy);
-
-
-	 
-	
 
 };
 

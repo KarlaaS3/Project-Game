@@ -106,6 +106,9 @@ void Scene_Play::sRender() {
             drawHP(e);
         }
 
+        drawCoinsCounter();
+
+
         // Draw grid (optional debugging)
         if (m_drawGrid) {
             sf::VertexArray lines(sf::Lines);
@@ -258,6 +261,7 @@ void Scene_Play::sCollision() {
     auto ground = m_entityManager.getEntities("ground");
     auto enemies = m_entityManager.getEntities("enemy");
     auto arrows = m_entityManager.getEntities("arrow");
+    auto coins = m_entityManager.getEntities("coin");
 
     for (auto p : players) {
         p->getComponent<CState>().unSet(CState::isGrounded); // not grounded
@@ -311,6 +315,15 @@ void Scene_Play::sCollision() {
                     }
                     ptx.vel.y = 0.f;
                 }
+            }
+        }
+
+        // Check collision with coins
+        for (auto c : coins) {
+            auto overlap = Physics::getOverlap(p, c);
+            if (overlap.x > 0 && overlap.y > 0) {
+                c->destroy(); // Destroy the coin
+                collectedCoins++; // Increment the collected coins count
             }
         }
     }
@@ -376,6 +389,7 @@ void Scene_Play::sCollision() {
         }
     }
 }
+
 
 void Scene_Play::sDoAction(const Action& action) {
     // On Key Press
@@ -461,10 +475,16 @@ void Scene_Play::drawHP(std::shared_ptr<Entity> e) {
     m_game->window().draw(hpText);
 }
 
-void Scene_Play::drawCoins()
-{
-}
+void Scene_Play::drawCoinsCounter() {
+    sf::Text coinText;
+    coinText.setFont(m_game->assets().getFont("Arial")); // Assuming "Arial" font is loaded
+    coinText.setString("Coins: " + std::to_string(collectedCoins));
+    coinText.setCharacterSize(20); // Adjust the size as needed
+    coinText.setFillColor(sf::Color::Yellow);
+    coinText.setPosition(10, 10); // Adjust the position as needed
 
+    m_game->window().draw(coinText);
+}
 
 void Scene_Play::sDebug() {
 }
@@ -553,6 +573,15 @@ void Scene_Play::loadFromFile(const std::string& path) {
 				m_enemyConfig.platformEndX >>
 				m_enemyConfig.WEAPON;
 		}
+        else if (token == "Coin") {
+            float gx, gy;
+            confFile >> gx >> gy;
+
+            auto coin = m_entityManager.addEntity("coin");
+            coin->addComponent<CAnimation>(m_game->assets().getAnimation("Coin"), true);
+            coin->addComponent<CTransform>(gridToMidPixel(gx, gy, coin));
+            coin->addComponent<CBoundingBox>(Vec2(20, 20)); // Adjust the size as needed
+        }
         else if (token == "#") {
             ; // ignore comments
             std::string tmp;
@@ -566,6 +595,7 @@ void Scene_Play::loadFromFile(const std::string& path) {
         confFile >> token;
     }
 }
+
 
 void Scene_Play::spawnPlayer() {
     m_player = m_entityManager.addEntity("player");
@@ -686,7 +716,8 @@ void Scene_Play::sEnemyBehavior() {
                     estate.set(CState::isFacingLeft);
                 }
             }
-        }
+        e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Attack");
+    }
         else {
             etx.vel.x = 0; // If no player is nearby, enemy stays still
         }
