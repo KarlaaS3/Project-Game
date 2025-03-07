@@ -47,6 +47,8 @@ protected:
 	const Vec2					m_gridSize{ 50,50 };
 	sf::Text					m_gridText;
 	sf::Sprite                  m_backgroundSprite;
+	enum class GameState { Playing, Won };
+	GameState m_gameState = GameState::Playing;
 
 	void	init(const std::string& levelPath);
 	void	registerActions();

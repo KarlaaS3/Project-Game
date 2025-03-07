@@ -214,6 +214,7 @@
     <ClCompile Include="GameEngine.cpp" />
     <ClCompile Include="Physics.cpp" />
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="Scene.Level2.cpp" />
     <ClCompile Include="Scene_Menu.cpp" />
     <ClCompile Include="Scene_Play.cpp" />
     <ClCompile Include="source.cpp" />

@@ -324,7 +324,7 @@ void Scene_Play::sCollision() {
             auto overlap = Physics::getOverlap(p, c);
             if (overlap.x > 0 && overlap.y > 0) {
                 c->destroy(); // Destroy the coin
-                collectedCoins++; // Increment the collected coins count
+                collectedCoins++; 
             }
         }
     }
@@ -377,7 +377,6 @@ void Scene_Play::sCollision() {
                 auto& enemyHealth = e->getComponent<CHealth>();
                 enemyHealth.remaining -= 20; // Reduce health
                 if (enemyHealth.remaining <= 0) {
-                    e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Death");
                     e->destroy(); // Enemy dies
                 }
                 else {
@@ -477,15 +476,15 @@ void Scene_Play::drawHP(std::shared_ptr<Entity> e) {
 
     // Create the health bar
     sf::RectangleShape hpBar;
-    hpBar.setSize(sf::Vector2f(health.remaining * 0.5f, 5)); // Shorter bar
+    hpBar.setSize(sf::Vector2f(health.remaining * 0.5f, 5)); 
     hpBar.setFillColor(sf::Color::Red);
     hpBar.setPosition(tx.pos.x - 25, tx.pos.y - 40); // Higher position
 
     // Create the health text
     sf::Text hpText;
-    hpText.setFont(m_game->assets().getFont("Arial")); // Assuming "Arial" font is loaded
+    hpText.setFont(m_game->assets().getFont("Arial")); 
     hpText.setString(std::to_string(health.remaining) + "/100");
-    hpText.setCharacterSize(10); // Adjusted size
+    hpText.setCharacterSize(10); 
     hpText.setFillColor(sf::Color::White);
     hpText.setPosition(tx.pos.x - 25, tx.pos.y - 50); // Higher position
 
@@ -496,11 +495,11 @@ void Scene_Play::drawHP(std::shared_ptr<Entity> e) {
 
 void Scene_Play::drawCoinsCounter() {
     sf::Text coinText;
-    coinText.setFont(m_game->assets().getFont("Arial")); // Assuming "Arial" font is loaded
+    coinText.setFont(m_game->assets().getFont("Arial")); 
     coinText.setString("Coins: " + std::to_string(collectedCoins));
-    coinText.setCharacterSize(20); // Adjust the size as needed
+    coinText.setCharacterSize(20); 
     coinText.setFillColor(sf::Color::Yellow);
-    coinText.setPosition(10, 10); // Adjust the position as needed
+    coinText.setPosition(10, 10); 
 
     m_game->window().draw(coinText);
 }
@@ -661,7 +660,6 @@ void Scene_Play::spawnEnemy(const EnemyConfig& config)
 	enemy->addComponent<CHealth>(100); 
 
 
-    // Set additional enemy properties like speed, gravity, etc.
     auto& transform = enemy->getComponent<CTransform>();
     transform.vel.x = config.SPEED;
     transform.vel.y = config.GRAVITY;
@@ -676,7 +674,7 @@ void Scene_Play::sEnemyBehavior() {
     for (auto e : enemies) {
         auto& etx = e->getComponent<CTransform>();
         auto& estate = e->getComponent<CState>();
-        auto& enemyConfig = m_enemyConfig; // Enemy config
+        auto& enemyConfig = m_enemyConfig;
 
         bool playerDetected = false;
         bool playerInAttackRange = false;
@@ -698,7 +696,7 @@ void Scene_Play::sEnemyBehavior() {
                 estate.unSet(CState::isAttacking);
             }
         }
-        // If the player is in detection range but not in attack range, patrol back and forth
+        // If the player is in detection range but not in attack range,
         if (playerDetected && !playerInAttackRange) {
             if (estate.test(CState::isFacingLeft)) {
                 etx.vel.x = -enemyConfig.SPEED;
@@ -706,7 +704,7 @@ void Scene_Play::sEnemyBehavior() {
             else {
                 etx.vel.x = enemyConfig.SPEED;
             }
-            // Check if the enemy has reached platform limits and switch direction
+            
             if (checkPlatformEdge(e)) {
                 if (estate.test(CState::isFacingLeft)) {
                     estate.unSet(CState::isFacingLeft);
@@ -719,10 +717,10 @@ void Scene_Play::sEnemyBehavior() {
         // If attacking, move left and right instead of following the player
         else if (playerInAttackRange) {
             if (estate.test(CState::isFacingLeft)) {
-                etx.vel.x = -enemyConfig.SPEED / 2; // Move slightly left
+                etx.vel.x = -enemyConfig.SPEED / 2; 
             }
             else {
-                etx.vel.x = enemyConfig.SPEED / 2; // Move slightly right
+                etx.vel.x = enemyConfig.SPEED / 2; 
             }
             // Change direction randomly to simulate enemy attacking motion
             if (rand() % 100 < 3) { // 3% chance to change direction each frame
@@ -757,7 +755,6 @@ bool Scene_Play::checkPlatformEdge(std::shared_ptr<Entity> enemy) {
     auto& boundingBox = enemy->getComponent<CBoundingBox>();
     auto& platformInfo = enemy->getComponent<CPlatformInfo>();
 
-    // Define an edge detection threshold (adjust based on tile sizes)
     float edgeThreshold = 5.0f;
 
     // Check if the enemy is near the left or right edge of its assigned platform
