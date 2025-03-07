@@ -528,12 +528,22 @@ void Scene_Play::drawCoinsCounter() {
 
 void Scene_Play::drawWinScreen()
 {
-    sf::Text winText;
-    winText.setFont(m_game->assets().getFont("Arial"));
-    winText.setString("YOU WON!\nPress [1] for Level 2\nPress [2] for Menu\nPress [3] to Restart");
-    winText.setCharacterSize(30);
-    winText.setFillColor(sf::Color::White);
-    winText.setPosition(200, 200);
+    sf::Text gameOverText;
+    gameOverText.setFont(m_game->assets().getFont("Arial"));
+    gameOverText.setCharacterSize(50);
+    gameOverText.setFillColor(sf::Color::White);
+    gameOverText.setString("YOU WIN!");
+    gameOverText.setPosition(m_game->window().getSize().x / 2 - 100, 100);
+    m_game->window().draw(gameOverText);
+
+    
+    sf::Text options;
+    options.setFont(m_game->assets().getFont("Arial"));
+    options.setCharacterSize(30);
+    options.setFillColor(sf::Color::Yellow);
+    options.setString("1 - Level 2\n2 - Menu\n3 - Restart Level 1");
+    options.setPosition(m_game->window().getSize().x / 2 - 100, 200);
+    m_game->window().draw(options);
 
     sf::RenderWindow& window = m_game->window();
     window.draw(winText);
