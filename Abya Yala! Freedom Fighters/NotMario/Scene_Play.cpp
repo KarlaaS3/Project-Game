@@ -41,6 +41,10 @@ void Scene_Play::registerActions() {
     registerAction(sf::Keyboard::Up, "JUMP");
 
     registerAction(sf::Keyboard::Space, "SHOOT");
+
+    registerAction(sf::Keyboard::Num1, "LEVEL2"); 
+    registerAction(sf::Keyboard::Num2, "MENU");    
+    registerAction(sf::Keyboard::Num3, "RESTART");
 }
 
 void Scene_Play::update() {
@@ -412,6 +416,22 @@ void Scene_Play::sCollision() {
 }
 
 void Scene_Play::sDoAction(const Action& action) {
+
+    if (m_hasEnded) {
+        if (action.type() == "START") {
+            if (action.name() == "LEVEL2") {
+                m_game->changeScene("PLAY_LEVEL2", std::make_shared<Scene_Play>(m_game, "level2.txt"));
+            }
+            else if (action.name() == "MENU") {
+                m_game->changeScene("MENU", nullptr);
+            }
+            else if (action.name() == "RESTART") {
+                m_game->changeScene("PLAY", std::make_shared<Scene_Play>(m_game, "level1.txt"));
+            }
+        }
+        return; 
+    }
+
     // On Key Press
     if (action.type() == "START") {
         if (action.name() == "TOGGLE_TEXTURE") { m_drawTextures = !m_drawTextures; }
@@ -504,6 +524,20 @@ void Scene_Play::drawCoinsCounter() {
     coinText.setPosition(10, 10); 
 
     m_game->window().draw(coinText);
+}
+
+void Scene_Play::drawWinScreen()
+{
+    sf::Text winText;
+    winText.setFont(m_game->assets().getFont("Arial"));
+    winText.setString("YOU WON!\nPress [1] for Level 2\nPress [2] for Menu\nPress [3] to Restart");
+    winText.setCharacterSize(30);
+    winText.setFillColor(sf::Color::White);
+    winText.setPosition(200, 200);
+
+    sf::RenderWindow& window = m_game->window();
+    window.draw(winText);
+    window.display();
 }
 
 void Scene_Play::sDebug() {
@@ -806,7 +840,9 @@ void Scene_Play::checkWinCondition() {
 
     if (allEnemiesDefeated && collectedCoins >= totalCoins) {
         m_hasEnded = true;
-        showWinScreen();
+        drawWinScreen();
     }
 }
+
+
 

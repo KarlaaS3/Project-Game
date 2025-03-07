@@ -72,6 +72,7 @@ public:
 	void drawLine();
 	void drawHP(std::shared_ptr<Entity> e);
 	void drawCoinsCounter();
+	void drawWinScreen();
 
 	void playerCheckState();
 
@@ -86,6 +87,7 @@ public:
 	void sEnemyBehavior();
 	void sEnemyCollision();
 	void checkWinCondition();
+	
  
 	bool checkPlatformEdge(std::shared_ptr<Entity> enemy);
 
