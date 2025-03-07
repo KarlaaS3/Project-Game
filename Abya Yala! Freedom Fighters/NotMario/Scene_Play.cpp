@@ -44,6 +44,7 @@ void Scene_Play::registerActions() {
 }
 
 void Scene_Play::update() {
+    if (m_hasEnded) return;
     m_entityManager.update();
 
     // TODO pause function
@@ -55,6 +56,7 @@ void Scene_Play::update() {
 	sEnemyBehavior();
 
     playerCheckState();
+	checkWinCondition();
 }
 
 void Scene_Play::sRender() {
@@ -789,7 +791,7 @@ void Scene_Play::createGround() {
 }
 
 void Scene_Play::checkWinCondition() {
-    if (m_gameState == GameState::Won) return; 
+    if (m_hasEnded) return;
 
     auto enemies = m_entityManager.getEntities("enemy");
 
@@ -803,7 +805,8 @@ void Scene_Play::checkWinCondition() {
     }
 
     if (allEnemiesDefeated && collectedCoins >= totalCoins) {
-        m_gameState = GameState::Won;
+        m_hasEnded = true;
+        showWinScreen();
     }
 }
 
