@@ -787,3 +787,23 @@ void Scene_Play::createGround() {
     // Add bounding box for collision detection
     ground->addComponent<CBoundingBox>(Vec2(groundWidth, groundHeight));
 }
+
+void Scene_Play::checkWinCondition() {
+    if (m_gameState == GameState::Won) return; 
+
+    auto enemies = m_entityManager.getEntities("enemy");
+
+    
+    bool allEnemiesDefeated = true;
+    for (auto& enemy : enemies) {
+        if (enemy->getComponent<CHealth>().remaining > 0) {
+            allEnemiesDefeated = false;
+            break; 
+        }
+    }
+
+    if (allEnemiesDefeated && collectedCoins >= totalCoins) {
+        m_gameState = GameState::Won;
+    }
+}
+

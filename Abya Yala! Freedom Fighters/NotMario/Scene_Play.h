@@ -44,6 +44,7 @@ protected:
 	bool						m_drawCollision{false}; 
 	bool						m_drawGrid{false};
 	int                         collectedCoins{ 0 };
+	int                         totalCoins{ 29 };
 	const Vec2					m_gridSize{ 50,50 };
 	sf::Text					m_gridText;
 	sf::Sprite                  m_backgroundSprite;
@@ -86,6 +87,7 @@ public:
 	void spawnEnemy(const EnemyConfig& config);
 	void sEnemyBehavior();
 	void sEnemyCollision();
+	void checkWinCondition();
  
 	bool checkPlatformEdge(std::shared_ptr<Entity> enemy);
 
