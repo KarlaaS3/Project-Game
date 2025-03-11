@@ -85,7 +85,6 @@ public:
 
 	void spawnEnemy(const EnemyConfig& config);
 	void sEnemyBehavior();
-	void sEnemyCollision();
 	void checkWinCondition();
 	
  

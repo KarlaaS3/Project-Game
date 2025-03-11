@@ -75,6 +75,11 @@ void Scene_Play::sRender() {
         // Draw the background image (this will stay fixed)
         m_game->window().draw(m_backgroundSprite);
 
+        if (m_hasEnded) {
+            drawWinScreen();  
+            return; 
+        }
+
         // Draw all entities
         if (m_drawTextures) {
             for (auto e : m_entityManager.getEntities()) {
@@ -393,6 +398,27 @@ void Scene_Play::sCollision() {
         }
     }
 
+    // Player collision with enemies
+    for (auto p : players) {
+        for (auto e : enemies) {
+            auto overlap = Physics::getOverlap(p, e);
+            if (overlap.x > 0 && overlap.y > 0) {  // Collision detected
+                auto& playerLifespan = p->getComponent<CLifespan>();
+                playerLifespan.remaining--;  // Reduce lifespan
+
+                if (playerLifespan.remaining <= 0) {
+                    p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Death");
+                    p->destroy(); 
+                    onEnd(); 
+                }
+                else {
+                    p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Hurt");
+                }
+            }
+        }
+    }
+
+
     // Enemy hit by an arrow
     for (auto e : enemies) {
         for (auto a : arrows) {
@@ -403,6 +429,7 @@ void Scene_Play::sCollision() {
                 if (enemyHealth.remaining <= 0) {
                     e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Death");
                     e->destroy(); // Enemy dies
+					onEnd(); // Call game over function
                 }
                 else {
                     e->getComponent<CState>().unSet(CState::isGrounded);
@@ -423,7 +450,7 @@ void Scene_Play::sDoAction(const Action& action) {
                 m_game->changeScene("PLAY_LEVEL2", std::make_shared<Scene_Play>(m_game, "level2.txt"));
             }
             else if (action.name() == "MENU") {
-                m_game->changeScene("MENU", nullptr);
+                m_game->changeScene("MENU", nullptr, true);
             }
             else if (action.name() == "RESTART") {
                 m_game->changeScene("PLAY", std::make_shared<Scene_Play>(m_game, "level1.txt"));
@@ -545,9 +572,7 @@ void Scene_Play::drawWinScreen()
     options.setPosition(m_game->window().getSize().x / 2 - 100, 200);
     m_game->window().draw(options);
 
-    sf::RenderWindow& window = m_game->window();
-    window.draw(winText);
-    window.display();
+    m_game->window().display();
 }
 
 void Scene_Play::sDebug() {
