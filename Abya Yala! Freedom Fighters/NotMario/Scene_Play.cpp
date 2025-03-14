@@ -371,11 +371,13 @@ void Scene_Play::sCollision() {
                 auto& etx = e->getComponent<CTransform>();
                 auto& gtx = g->getComponent<CTransform>();
 
-                // Y-axis collision (ground)
                 if (prevOverlap.x > 0) {
-                    if (etx.prevPos.y < gtx.prevPos.y) {  // Enemy is above ground
+                    if (etx.prevPos.y < gtx.prevPos.y) {
                         etx.pos.y -= overlap.y;
                         e->getComponent<CState>().set(CState::isGrounded);
+                    }
+                    else {
+                        etx.pos.y += overlap.y;
                     }
                     etx.vel.y = 0.f;
                 }
@@ -658,7 +660,7 @@ void Scene_Play::loadFromFile(const std::string& path) {
                 m_playerConfig.GRAVITY >>
                 m_playerConfig.WEAPON;
         }
-        else if (token == "Enemy") {
+		else if (token == "Enemy") {
             EnemyConfig enemyConfig;
             confFile >>
                 enemyConfig.X >>
@@ -739,7 +741,6 @@ void Scene_Play::spawnEnemy(const std::vector<EnemyConfig>& configs) {
     for (const auto& config : configs) {
         auto enemy = m_entityManager.addEntity("enemy");
         enemy->addComponent<CAnimation>(m_game->assets().getAnimation("Enemy"), true);
-        enemy->addComponent<CTransform>(gridToMidPixel(config.X, config.Y, enemy));
         enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
         enemy->addComponent<CState>();
         enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
