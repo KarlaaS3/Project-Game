@@ -434,10 +434,10 @@ void Scene_Play::sCollision() {
                 }
                 else {
                     e->getComponent<CState>().unSet(CState::isGrounded);
-                    e->getComponent<CTransform>().vel.y = 5.f; 
+                    e->getComponent<CTransform>().vel.y = 5.f; // Make the enemy fall
                     e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Hurt");
                 }
-                a->destroy(); 
+                a->destroy(); // Destroy the arrow
             }
         }
     }
@@ -739,18 +739,20 @@ void Scene_Play::spawnEnemy(const std::vector<EnemyConfig>& configs) {
     for (const auto& config : configs) {
         auto enemy = m_entityManager.addEntity("enemy");
         enemy->addComponent<CAnimation>(m_game->assets().getAnimation("Enemy"), true);
-        Vec2 pixelPos = gridToMidPixel(config.X, config.Y, enemy);
-        enemy->addComponent<CTransform>(pixelPos);
+        enemy->addComponent<CTransform>(gridToMidPixel(config.X, config.Y, enemy));
         enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
         enemy->addComponent<CState>();
         enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
         enemy->addComponent<CHealth>(100);
+        Vec2 pos = gridToMidPixel(config.X, config.Y, enemy);
+        std::cout << "Converted position: " << pos.x << ", " << pos.y << std::endl;
+        enemy->addComponent<CTransform>(pos);
 
         auto& transform = enemy->getComponent<CTransform>();
         transform.vel.x = config.SPEED;
         transform.vel.y = config.GRAVITY;
 
-        std::cout << "Spawned enemy at grid: (" << config.X << ", " << config.Y << ") -> pixel: (" << pixelPos.x << ", " << pixelPos.y << ") with weapon: " << config.WEAPON << std::endl;
+        std::cout << "Spawned enemy at: " << config.X << ", " << config.Y << " with weapon: " << config.WEAPON << std::endl;
     }
 }
 
