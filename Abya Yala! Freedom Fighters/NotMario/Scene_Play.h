@@ -38,6 +38,7 @@ protected:
 	std::shared_ptr<Entity>		m_player;
 	std::string					m_levelPath;
 	PlayerConfig				m_playerConfig;
+	std::vector<EnemyConfig> m_enemyConfigs;
 	EnemyConfig					m_enemyConfig;
 	std::priority_queue<SpawnPoint>     _spawnPoints;
 	bool						m_drawTextures{true};						
@@ -73,6 +74,7 @@ public:
 	void drawHP(std::shared_ptr<Entity> e);
 	void drawCoinsCounter();
 	void drawWinScreen();
+	void drawLifeSpan();
 
 	void playerCheckState();
 
@@ -83,9 +85,10 @@ public:
 	void spawnPlayer();
 	void spawnBullet(std::shared_ptr<Entity>);
 
-	void spawnEnemy(const EnemyConfig& config);
+	void spawnEnemy(const std::vector<EnemyConfig>& configs);
 	void sEnemyBehavior();
 	void checkWinCondition();
+	void checkLoseCondition();
 	
  
 	bool checkPlatformEdge(std::shared_ptr<Entity> enemy);

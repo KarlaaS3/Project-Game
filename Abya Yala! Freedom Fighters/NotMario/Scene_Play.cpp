@@ -118,6 +118,7 @@ void Scene_Play::sRender() {
         }
 
         drawCoinsCounter();
+		drawLifeSpan();
 
 
         // Draw grid (optional debugging)
@@ -402,17 +403,17 @@ void Scene_Play::sCollision() {
     for (auto p : players) {
         for (auto e : enemies) {
             auto overlap = Physics::getOverlap(p, e);
-            if (overlap.x > 0 && overlap.y > 0) {  // Collision detected
+            if (overlap.x > 0 && overlap.y > 0) {  
                 auto& playerLifespan = p->getComponent<CLifespan>();
-                playerLifespan.remaining--;  // Reduce lifespan
+                playerLifespan.remaining--;  
 
                 if (playerLifespan.remaining <= 0) {
-                    p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Death");
                     p->destroy(); 
                     onEnd(); 
                 }
                 else {
-                    p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Hurt");
+					p->getComponent<CTransform>().vel.y = 5.f;
+                    p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("PlayerHurt");
                 }
             }
         }
@@ -433,10 +434,10 @@ void Scene_Play::sCollision() {
                 }
                 else {
                     e->getComponent<CState>().unSet(CState::isGrounded);
-                    e->getComponent<CTransform>().vel.y = 5.f; // Make the enemy fall
+                    e->getComponent<CTransform>().vel.y = 5.f; 
                     e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Hurt");
                 }
-                a->destroy(); // Destroy the arrow
+                a->destroy(); 
             }
         }
     }
@@ -575,6 +576,17 @@ void Scene_Play::drawWinScreen()
     m_game->window().display();
 }
 
+void Scene_Play::drawLifeSpan()
+{
+	sf::Text lifeSpanText;
+	lifeSpanText.setFont(m_game->assets().getFont("Arial"));
+	lifeSpanText.setString("Life Span: " + std::to_string(m_player->getComponent<CLifespan>().remaining));
+    lifeSpanText.setCharacterSize(20);
+    lifeSpanText.setFillColor(sf::Color::White);
+	lifeSpanText.setPosition(10, 40);
+	m_game->window().draw(lifeSpanText);
+}
+
 void Scene_Play::sDebug() {
 }
 
@@ -599,7 +611,7 @@ void Scene_Play::loadLevel(const std::string& path) {
     loadFromFile(path);
 
     spawnPlayer();
-	spawnEnemy(m_enemyConfig);
+	spawnEnemy(m_enemyConfigs);
 }
 
 void Scene_Play::loadFromFile(const std::string& path) {
@@ -612,6 +624,7 @@ void Scene_Play::loadFromFile(const std::string& path) {
     }
 
     std::string token{ "" };
+    std::vector<EnemyConfig> enemyConfigs;
     confFile >> token;
     while (confFile) {
         if (token == "Tile") {
@@ -645,22 +658,23 @@ void Scene_Play::loadFromFile(const std::string& path) {
                 m_playerConfig.GRAVITY >>
                 m_playerConfig.WEAPON;
         }
-		else if (token == "Enemy") {
-			EnemyConfig enemyConfig;
-			confFile >>
-				m_enemyConfig.X >>
-				m_enemyConfig.Y >>
-				m_enemyConfig.CW >>
-				m_enemyConfig.CH >>
-				m_enemyConfig.SPEED >>
-				m_enemyConfig.JUMP >>
-				m_enemyConfig.MAXSPEED >>
-				m_enemyConfig.GRAVITY >>
-				m_enemyConfig.DETECTION_RANGE >>
-				m_enemyConfig.ATTACK_RANGE >>
-				m_enemyConfig.platformStartX >>
-				m_enemyConfig.platformEndX >>
-				m_enemyConfig.WEAPON;
+        else if (token == "Enemy") {
+            EnemyConfig enemyConfig;
+            confFile >>
+                enemyConfig.X >>
+                enemyConfig.Y >>
+                enemyConfig.CW >>
+                enemyConfig.CH >>
+                enemyConfig.SPEED >>
+                enemyConfig.JUMP >>
+                enemyConfig.MAXSPEED >>
+                enemyConfig.GRAVITY >>
+                enemyConfig.DETECTION_RANGE >>
+                enemyConfig.ATTACK_RANGE >>
+                enemyConfig.platformStartX >>
+                enemyConfig.platformEndX >>
+                enemyConfig.WEAPON;
+            enemyConfigs.push_back(enemyConfig);
 		}
         else if (token == "Coin") {
             float gx, gy;
@@ -672,7 +686,6 @@ void Scene_Play::loadFromFile(const std::string& path) {
             coin->addComponent<CBoundingBox>(Vec2(20, 20)); // Adjust the size as needed
         }
         else if (token == "#") {
-            ; // ignore comments
             std::string tmp;
             std::getline(confFile, tmp);
             std::cout << "# " << tmp << "\n";
@@ -683,6 +696,8 @@ void Scene_Play::loadFromFile(const std::string& path) {
 
         confFile >> token;
     }
+
+    m_enemyConfigs = enemyConfigs;
 }
 
 void Scene_Play::spawnPlayer() {
@@ -720,22 +735,23 @@ void Scene_Play::spawnBullet(std::shared_ptr<Entity> e) {
     }
 }
 
-void Scene_Play::spawnEnemy(const EnemyConfig& config)
-{
-    auto enemy = m_entityManager.addEntity("enemy");
-    enemy->addComponent<CAnimation>(m_game->assets().getAnimation("Enemy"), true);
-    enemy->addComponent<CTransform>(gridToMidPixel(config.X, config.Y, enemy));
-    enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
-    enemy->addComponent<CState>();
-    enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
-	enemy->addComponent<CHealth>(100); 
+void Scene_Play::spawnEnemy(const std::vector<EnemyConfig>& configs) {
+    for (const auto& config : configs) {
+        auto enemy = m_entityManager.addEntity("enemy");
+        enemy->addComponent<CAnimation>(m_game->assets().getAnimation("Enemy"), true);
+        Vec2 pixelPos = gridToMidPixel(config.X, config.Y, enemy);
+        enemy->addComponent<CTransform>(pixelPos);
+        enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
+        enemy->addComponent<CState>();
+        enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
+        enemy->addComponent<CHealth>(100);
 
+        auto& transform = enemy->getComponent<CTransform>();
+        transform.vel.x = config.SPEED;
+        transform.vel.y = config.GRAVITY;
 
-    auto& transform = enemy->getComponent<CTransform>();
-    transform.vel.x = config.SPEED;
-    transform.vel.y = config.GRAVITY;
-
-    std::cout << "Spawned enemy at: " << config.X << ", " << config.Y << " with weapon: " << config.WEAPON << std::endl;
+        std::cout << "Spawned enemy at grid: (" << config.X << ", " << config.Y << ") -> pixel: (" << pixelPos.x << ", " << pixelPos.y << ") with weapon: " << config.WEAPON << std::endl;
+    }
 }
 
 void Scene_Play::sEnemyBehavior() {
@@ -788,10 +804,10 @@ void Scene_Play::sEnemyBehavior() {
         // If attacking, move left and right instead of following the player
         else if (playerInAttackRange) {
             if (estate.test(CState::isFacingLeft)) {
-                etx.vel.x = -enemyConfig.SPEED / 2; 
+                etx.vel.x = -enemyConfig.SPEED; 
             }
             else {
-                etx.vel.x = enemyConfig.SPEED / 2; 
+                etx.vel.x = enemyConfig.SPEED; 
             }
             // Change direction randomly to simulate enemy attacking motion
             if (rand() % 100 < 3) { // 3% chance to change direction each frame
@@ -878,6 +894,20 @@ void Scene_Play::checkWinCondition() {
         drawWinScreen();
     }
 }
+
+void Scene_Play::checkLoseCondition()
+{
+	if (m_hasEnded) return;
+	auto players = m_entityManager.getEntities("player");
+	for (auto& player : players) {
+		if (player->getComponent<CLifespan>().remaining <= 0) {
+			m_hasEnded = true;
+			onEnd();
+		}
+	}
+}
+
+
 
 
 

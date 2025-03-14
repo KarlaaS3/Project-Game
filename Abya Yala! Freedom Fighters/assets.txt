@@ -18,6 +18,7 @@ Texture TexEnemy           ../assets/mario/enemyWalk.png
 Texture TexAttack       ../assets/mario/Attack.png
 Texture TexHurt       ../assets/mario/Hurt.png
 Texture TexDeath       ../assets/mario/Death.png
+Texture TexPlayerHurt  ../assets/mario/Soldier-Hurt.png
 
 Texture Background      ../assets/mario/TreeBackground.png
 
@@ -32,3 +33,4 @@ Animation Coin			TexCoin		12	2
 Animation Attack                TexAttack       10      5
 Animation Hurt                  TexHurt         4       5
 Animation Death                 TexDeath        4       5
+Animation PlayerHurt            TexPlayerHurt   4       5

@@ -93,4 +93,7 @@ Coin                    18     9
 
 #     gX, gY, cW, cH, sX, sY,  sM,  g,   bullet 
 Player 2   2  40  60   5  20  20  0.75  Arrow
-Enemy  3   5  40  60   1  10  5  0.75  200  150 2 9  Arrow
+Enemy  7   6  40  60   1  10  5  0.75  200  150 2 9  Arrow
+Enemy  3   10  40  60   1  10  5  0.75  200  150 2 9  Arrow
+Enemy  3   13  40  60   1  10  5  0.75  200  150 2 9  Arrow
+Enemy 11   18  40  60   1  10  5  0.75  200  150 2 9  Arrow
