@@ -14,16 +14,27 @@ Scene_Play::Scene_Play(GameEngine* gameEngine, const std::string& levelPath)
 void Scene_Play::init(const std::string& levelPath) {
     registerActions();
 
-
     m_gridText.setCharacterSize(12);
     m_gridText.setFont(m_game->assets().getFont("Arial"));
 
-    const sf::Texture& backgroundTexture = m_game->assets().getTexture("Background");
+    sf::Texture& backgroundTexture = const_cast<sf::Texture&>(m_game->assets().getTexture("Background"));
+    backgroundTexture.setRepeated(true);
     m_backgroundSprite.setTexture(backgroundTexture);
 
     loadLevel(levelPath);
     createGround();
 }
+
+void Scene_Play::updateBackground() {
+    auto& playerTransform = m_player->getComponent<CTransform>();
+
+    // Calculate the background position based on the player's horizontal position
+    float backgroundX = playerTransform.pos.x * 0.5f; // Adjust the factor as needed
+
+    // Set the texture rect to create a scrolling effect
+    m_backgroundSprite.setTextureRect(sf::IntRect(backgroundX, 0, m_game->window().getSize().x, m_game->window().getSize().y));
+}
+
 
 void Scene_Play::registerActions() {
     registerAction(sf::Keyboard::P, "PAUSE");
@@ -61,110 +72,113 @@ void Scene_Play::update() {
 
     playerCheckState();
 	checkWinCondition();
+	updateView();
+	updateBackground();
+	//sDeb
 }
 
 void Scene_Play::sRender() {
-        // Background color (only visible if there's transparency)
-        static const sf::Color background(100, 100, 255);
-        static const sf::Color pauseBackground(50, 50, 150);
-        m_game->window().clear((m_isPaused ? pauseBackground : background));
+    // Background color (only visible if there's transparency)
+    static const sf::Color background(100, 100, 255);
+    static const sf::Color pauseBackground(50, 50, 150);
+    m_game->window().clear((m_isPaused ? pauseBackground : background));
 
-        // **Always use the default view to keep everything static**
-        m_game->window().setView(m_game->window().getDefaultView());
+    // **Always use the default view to keep everything static**
+    m_game->window().setView(m_game->window().getDefaultView());
 
-        // Draw the background image (this will stay fixed)
-        m_game->window().draw(m_backgroundSprite);
+    // Draw the background image (this will stay fixed)
+    m_game->window().draw(m_backgroundSprite);
 
-        if (m_hasEnded) {
-            drawWinScreen();  
-            return; 
-        }
+    if (m_hasEnded) {
+        drawWinScreen();
+        return;
+    }
 
-        // Draw all entities
-        if (m_drawTextures) {
-            for (auto e : m_entityManager.getEntities()) {
-                if (e->hasComponent<CAnimation>()) {
-                    auto& transform = e->getComponent<CTransform>();
-                    auto& animation = e->getComponent<CAnimation>().animation;
-                    animation.getSprite().setRotation(transform.angle);
-                    animation.getSprite().setPosition(transform.pos.x, transform.pos.y);
-                    animation.getSprite().setScale(transform.scale.x, transform.scale.y);
-                    m_game->window().draw(animation.getSprite());
-                }
+    // Draw all entities
+    if (m_drawTextures) {
+        for (auto e : m_entityManager.getEntities()) {
+            if (e->hasComponent<CAnimation>()) {
+                auto& transform = e->getComponent<CTransform>();
+                auto& animation = e->getComponent<CAnimation>().animation;
+                animation.getSprite().setRotation(transform.angle);
+                animation.getSprite().setPosition(transform.pos.x, transform.pos.y);
+                animation.getSprite().setScale(transform.scale.x, transform.scale.y);
+                m_game->window().draw(animation.getSprite());
             }
         }
+    }
 
-        // Draw collision boxes (debugging)
-        if (m_drawCollision) {
-            for (auto e : m_entityManager.getEntities()) {
-                if (e->hasComponent<CBoundingBox>()) {
-                    auto& box = e->getComponent<CBoundingBox>();
-                    auto& transform = e->getComponent<CTransform>();
-                    sf::RectangleShape rect;
-                    rect.setSize(sf::Vector2f(box.size.x, box.size.y));
-                    rect.setOrigin(sf::Vector2f(box.halfSize.x, box.halfSize.y));
-                    rect.setPosition(transform.pos.x, transform.pos.y);
-                    rect.setFillColor(sf::Color(0, 0, 0, 0));
-                    rect.setOutlineColor(sf::Color(0, 255, 0));
-                    rect.setOutlineThickness(1.f);
-                    m_game->window().draw(rect);
-                }
+    // Draw collision boxes (debugging)
+    if (m_drawCollision) {
+        for (auto e : m_entityManager.getEntities()) {
+            if (e->hasComponent<CBoundingBox>()) {
+                auto& box = e->getComponent<CBoundingBox>();
+                auto& transform = e->getComponent<CTransform>();
+                sf::RectangleShape rect;
+                rect.setSize(sf::Vector2f(box.size.x, box.size.y));
+                rect.setOrigin(sf::Vector2f(box.halfSize.x, box.halfSize.y));
+                rect.setPosition(transform.pos.x, transform.pos.y);
+                rect.setFillColor(sf::Color(0, 0, 0, 0));
+                rect.setOutlineColor(sf::Color(0, 255, 0));
+                rect.setOutlineThickness(1.f);
+                m_game->window().draw(rect);
             }
         }
+    }
 
-        // Draw health bars for enemies
-        for (auto e : m_entityManager.getEntities("enemy")) {
-            drawHP(e);
+    // Draw health bars for enemies
+    for (auto e : m_entityManager.getEntities("enemy")) {
+        drawHP(e);
+    }
+
+    drawCoinsCounter();
+    drawLifeSpan();
+
+    // Draw grid (optional debugging)
+    if (m_drawGrid) {
+        sf::VertexArray lines(sf::Lines);
+        sf::Text gridText;
+        gridText.setFont(m_game->assets().getFont("Arial"));
+        gridText.setCharacterSize(10);
+
+        float left = 0;
+        float right = m_game->window().getSize().x;
+        float top = 0;
+        float bot = m_game->window().getSize().y;
+
+        int nCols = static_cast<int>(m_game->window().getSize().x) / m_gridSize.x;
+        int nRows = static_cast<int>(m_game->window().getSize().y) / m_gridSize.y;
+
+        lines.clear();
+
+        // Vertical lines
+        for (int x = 0; x <= nCols; ++x) {
+            lines.append(sf::Vector2f(x * m_gridSize.x, top));
+            lines.append(sf::Vector2f(x * m_gridSize.x, bot));
         }
 
-        drawCoinsCounter();
-		drawLifeSpan();
+        // Horizontal lines
+        for (int y = 0; y <= nRows; ++y) {
+            lines.append(sf::Vector2f(left, y * m_gridSize.y));
+            lines.append(sf::Vector2f(right, y * m_gridSize.y));
+        }
 
-
-        // Draw grid (optional debugging)
-        if (m_drawGrid) {
-            sf::VertexArray lines(sf::Lines);
-            sf::Text gridText;
-            gridText.setFont(m_game->assets().getFont("Arial"));
-            gridText.setCharacterSize(10);
-
-            float left = 0;
-            float right = m_game->window().getSize().x;
-            float top = 0;
-            float bot = m_game->window().getSize().y;
-
-            int nCols = static_cast<int>(m_game->window().getSize().x) / m_gridSize.x;
-            int nRows = static_cast<int>(m_game->window().getSize().y) / m_gridSize.y;
-
-            lines.clear();
-
-            // Vertical lines
-            for (int x = 0; x <= nCols; ++x) {
-                lines.append(sf::Vector2f(x * m_gridSize.x, top));
-                lines.append(sf::Vector2f(x * m_gridSize.x, bot));
-            }
-
-            // Horizontal lines
+        // Grid coordinates
+        for (int x = 0; x <= nCols; ++x) {
             for (int y = 0; y <= nRows; ++y) {
-                lines.append(sf::Vector2f(left, y * m_gridSize.y));
-                lines.append(sf::Vector2f(right, y * m_gridSize.y));
+                std::string label = "(" + std::to_string(x) + ", " + std::to_string(y) + ")";
+                gridText.setString(label);
+                gridText.setPosition(x * m_gridSize.x, y * m_gridSize.y);
+                m_game->window().draw(gridText);
             }
-
-            // Grid coordinates
-            for (int x = 0; x <= nCols; ++x) {
-                for (int y = 0; y <= nRows; ++y) {
-                    std::string label = "(" + std::to_string(x) + ", " + std::to_string(y) + ")";
-                    gridText.setString(label);
-                    gridText.setPosition(x * m_gridSize.x, y * m_gridSize.y);
-                    m_game->window().draw(gridText);
-                }
-            }
-
-            m_game->window().draw(lines);
         }
 
-        m_game->window().display();
-   }
+        m_game->window().draw(lines);
+    }
+
+    m_game->window().display();
+}
+
 
 void Scene_Play::sMovement() {
     // player movement
@@ -194,8 +208,6 @@ void Scene_Play::sMovement() {
     // Define the boundaries of the window
     const float leftBoundary = 0.0f;
     const float rightBoundary = static_cast<float>(m_game->window().getSize().x);
-    const float topBoundary = 0.0f;
-    const float bottomBoundary = static_cast<float>(m_game->window().getSize().y);
 
     // move all entities
     for (auto e : m_entityManager.getEntities()) {
@@ -212,16 +224,9 @@ void Scene_Play::sMovement() {
             tx.pos.x = rightBoundary;
             tx.vel.x = 0;
         }
-        if (tx.pos.y < topBoundary) {
-            tx.pos.y = topBoundary;
-            tx.vel.y = 0;
-        }
-        if (tx.pos.y > bottomBoundary) {
-            tx.pos.y = bottomBoundary;
-            tx.vel.y = 0;
-        }
     }
 }
+
 
 void Scene_Play::playerCheckState() {
     auto& tx = m_player->getComponent<CTransform>();
@@ -501,6 +506,28 @@ void Scene_Play::sDoAction(const Action& action) {
         else if (action.name() == "SHOOT") { m_player->getComponent<CInput>().canShoot = true; }
     }
 }
+
+void Scene_Play::updateView() {
+    auto& playerTransform = m_player->getComponent<CTransform>();
+    sf::View view = m_game->window().getView();
+
+    // Center the view on the player's horizontal position
+    view.setCenter(playerTransform.pos.x, view.getCenter().y);
+
+    // Ensure the view does not go out of the level boundaries
+    float halfViewWidth = view.getSize().x / 2;
+    float levelWidth = 1200; // Adjust this value based on your level width
+
+    if (view.getCenter().x - halfViewWidth < 0) {
+        view.setCenter(halfViewWidth, view.getCenter().y);
+    }
+    if (view.getCenter().x + halfViewWidth > levelWidth) {
+        view.setCenter(levelWidth - halfViewWidth, view.getCenter().y);
+    }
+
+    m_game->window().setView(view);
+}
+
 
 void Scene_Play::sAnimation() {
     // m_player->getComponent<CAnimation>().animation.update();
