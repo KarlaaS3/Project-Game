@@ -5,11 +5,19 @@ Tile Brick		28	9
 Tile Brick		29	9
 Tile Brick		30	9
 Tile Brick		31	9
-Tile Brick		33	11
-Tile Brick		34	11
+Tile Brick		32	9
+Tile Brick		33	9
+
+
 Tile Brick		35	11
 Tile Brick		36	11
 Tile Brick		37	11
+Tile Brick		38	11
+Tile Brick		39	11
+
+Tile Brick		50	11
+Tile Brick		54	11
+
 
 Tile Brick		25	11
 Tile Brick		24	11
@@ -33,18 +41,29 @@ Tile Brick		1	11
 Tile Brick		0	11
 
 
-Tile Brick		24	5
-Tile Brick		25	5
-Tile Brick		26	5
-Tile Brick		27	5
-Tile Brick		28	5
-Tile Brick		29	5
+Tile Brick		27	6
+Tile Brick		28	6
+Tile Brick		29	6
+Tile Brick		30	6
+Tile Brick		31	6
+Tile Brick		31	5
+Tile Brick		32	5
+Tile Brick		33	5
+Tile Brick		34	5
 
-Tile Brick		31	8
-Tile Brick		32	8
+Tile Brick		37	5
+Tile Brick		38	5
+Tile Brick		39	5
+Tile Brick		39	6
+Tile Brick		40	6
+Tile Brick		40	7
+Tile Brick		41	7
+Tile Brick		42	7
+
 Tile Brick		33	8
 Tile Brick		34	8
 Tile Brick		35	8
+Tile Brick		36	8
 
 
 Tile Brick		21	7
@@ -63,11 +82,16 @@ Tile Brick		4	7
 Tile Brick		3	7
 Tile Brick		2	7
 
-Tile Brick		32      3
-Tile Brick		33      3
-Tile Brick		34      3
-Tile Brick		35      3
-Tile Brick		36      3
+Tile Brick		29      1
+Tile Brick		30      1
+Tile Brick		31      1
+Tile Brick		32      1
+Tile Brick		33      1
+Tile Brick		34      1
+Tile Brick		35      1
+Tile Brick		36      1
+Tile Brick		36      1
+Tile Brick		36      1
 
 Tile Brick		7	3
 Tile Brick		9	3
@@ -112,6 +136,7 @@ Coin                    7      5
 Coin                    8      5
 Coin                    9      5
 Coin                    10     5
+
 Coin                    2      9
 Coin                    3      9
 Coin                    4      9
@@ -125,7 +150,7 @@ Coin                    17     9
 Coin                    18     9
 
 #     gX, gY, cW, cH, sX, sY,  sM,  g,   bullet 
-Player 2   2  40  60   5  20  20  0.75  Arrow
+Player -2   2  40  60   5  20  20  0.75  Arrow
 Enemy  7   6  40  60   1  10  5  0.75  200  150 2 9  Arrow
 Enemy  10  6  40  60   1  10  5  0.75  200  150 2 9  Arrow
 Enemy  15  6  40  60   1  10  5  0.75  200  150 2 9  Arrow

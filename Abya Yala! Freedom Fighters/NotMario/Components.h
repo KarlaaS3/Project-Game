@@ -122,6 +122,7 @@ struct CGravity : public Component
 
 struct CAttackTimer {
 	float timeLeft;
+	float cooldown;
 	bool has{ false };
 	CAttackTimer(float cooldown = 0) : timeLeft(cooldown) {}
 };

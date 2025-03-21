@@ -29,13 +29,11 @@ void Scene_Play::updateBackground() {
     auto& playerTransform = m_player->getComponent<CTransform>();
 
     // Calculate the background position based on the player's horizontal position
-    float backgroundX = playerTransform.pos.x * 0.5f; // Adjust the factor as needed
+    float backgroundX = playerTransform.pos.x * 0.3f; 
 
     // Set the texture rect to create a scrolling effect
     m_backgroundSprite.setTextureRect(sf::IntRect(backgroundX, 0, m_game->window().getSize().x, m_game->window().getSize().y));
 }
-
-
 
 void Scene_Play::registerActions() {
     registerAction(sf::Keyboard::P, "PAUSE");
@@ -83,19 +81,26 @@ void Scene_Play::sRender() {
     static const sf::Color pauseBackground(50, 50, 150);
     m_game->window().clear((m_isPaused ? pauseBackground : background));
 
-
     auto& pPos = m_player->getComponent<CTransform>().pos;
     float centerX = std::max(m_game->window().getSize().x / 2.f, pPos.x);
+
+    // Calculate the maximum centerX value
+    int textureWidth = m_backgroundSprite.getTexture()->getSize().x;
+    int numTiles = 2; // Number of tiles to draw
+    float maxCenterX = textureWidth * numTiles - m_game->window().getSize().x / 2.f;
+
+    // Clamp the centerX value
+    centerX = std::min(centerX, maxCenterX);
+
     sf::View view = m_game->window().getView();
     view.setCenter(centerX, m_game->window().getSize().y - view.getCenter().y);
     m_game->window().setView(view);
 
     // Draw the background image multiple times to create a tiling effect
-    int textureWidth = m_backgroundSprite.getTexture()->getSize().x;
     int windowWidth = m_game->window().getSize().x;
-    int numTiles = (windowWidth / textureWidth) + 2.5; // Number of tiles to draw
+    int numTilesToDraw = (windowWidth / textureWidth) + 2.5; // Number of tiles to draw
 
-    for (int i = -1; i < numTiles; ++i) {
+    for (int i = -1; i < numTilesToDraw; ++i) {
         m_backgroundSprite.setPosition(i * textureWidth - (static_cast<int>(pPos.x * 0.5f) % textureWidth), 0);
         m_game->window().draw(m_backgroundSprite);
     }
@@ -190,7 +195,6 @@ void Scene_Play::sRender() {
     m_game->window().display();
 }
 
-
 void Scene_Play::sMovement() {
     // player movement
     auto& pt = m_player->getComponent<CTransform>();
@@ -225,7 +229,6 @@ void Scene_Play::sMovement() {
         tx.pos += tx.vel;
     }
 }
-
 
 void Scene_Play::playerCheckState() {
     auto& tx = m_player->getComponent<CTransform>();
@@ -468,7 +471,6 @@ void Scene_Play::sCollision() {
     }
 }
 
-
 void Scene_Play::sDoAction(const Action& action) {
 
     if (m_hasEnded) {
@@ -525,7 +527,6 @@ void Scene_Play::sDoAction(const Action& action) {
         else if (action.name() == "SHOOT") { m_player->getComponent<CInput>().canShoot = true; }
     }
 }
-
 
 void Scene_Play::sAnimation() {
     // m_player->getComponent<CAnimation>().animation.update();
@@ -806,14 +807,13 @@ bool Scene_Play::checkPlatformEdge(std::shared_ptr<Entity> enemy) {
 
 void Scene_Play::createGround() {
 
-    float groundWidth = m_game->window().getSize().x;  // Full screen width
-    float groundHeight = 30.0f;  // Thickness of the collision area
+    float groundWidth = m_game->window().getSize().x; 
+    float groundHeight = 30.0f;  
 
-    // Define ground position (bottom of the screen)
     float groundX = groundWidth / 2;
     float groundY = m_game->window().getSize().y - (groundHeight / 2);
 
-    // Create the ground entity
+
     auto ground = m_entityManager.addEntity("ground");
 
     // Add transform component
@@ -906,36 +906,49 @@ void Scene_Play::sEnemyBehavior() {
         attackTimer.timeLeft -= m_game->deltaTime();
 
         bool playerNearby = false;
+        bool attacking = false;
 
-        // If cooldown is finished, perform attack
-        if (attackTimer.timeLeft <= 0) {
-            auto players = m_entityManager.getEntities("player");
-            for (auto player : players) {
-                auto& playerTransform = player->getComponent<CTransform>();
-                float distance = std::abs(transform.pos.x - playerTransform.pos.x);
+        // Check for players
+        auto players = m_entityManager.getEntities("player");
+        for (auto player : players) {
+            auto& playerTransform = player->getComponent<CTransform>();
+            float distance = std::abs(transform.pos.x - playerTransform.pos.x);
 
-                if (distance < 200) {  // Player is in range
+            // **Always face the player**
+            if (playerTransform.pos.x < transform.pos.x) {
+                transform.scale.x = -1; // Face left
+                enemy->getComponent<CState>().set(CState::isFacingLeft);
+            }
+            else {
+                transform.scale.x = 1; // Face right
+                enemy->getComponent<CState>().unSet(CState::isFacingLeft);
+            }
+
+            if (distance < 200) {
+                playerNearby = true;
+
+                // Attack only if cooldown is over
+                if (attackTimer.timeLeft <= 0) {
+                    attackTimer.timeLeft = 2.0f;  // **Reset cooldown BEFORE attacking**
+
                     if (distance < 50) {
-                        meleeAttack(enemy);  // Melee attack if close
+                        meleeAttack(enemy);
                     }
                     else {
-                        rangedAttack(enemy);  // Ranged attack if farther
+                        rangedAttack(enemy);
                     }
 
-                    // Reset the attack timer after performing the attack
-                    attackTimer.timeLeft = 2.0f;  // Reset cooldown to 2 seconds
-                    break;
+                    attacking = true;  // Mark that the enemy is attacking
                 }
             }
         }
 
-        // If no player is nearby, continue patrolling
+        // If no player is nearby, patrol
         if (!playerNearby) {
             if (checkPlatformEdge(enemy)) {
                 transform.vel.x *= -1;  // Reverse direction
                 transform.scale.x *= -1;  // Flip sprite direction
 
-                // Update the facing direction state
                 if (transform.vel.x < 0) {
                     enemy->getComponent<CState>().set(CState::isFacingLeft);
                 }
@@ -944,11 +957,17 @@ void Scene_Play::sEnemyBehavior() {
                 }
             }
         }
+        else if (!attacking) {
+            // If player is nearby but not attacking, move slightly toward them
+            transform.vel.x = (transform.scale.x == 1) ? 0.5f : -0.5f;  // Slow approach
+        }
+        else {
+            transform.vel.x = 0;  // Stop movement while attacking
+        }
 
-        // Move enemy (only if patrolling)
-        transform.pos.x += transform.vel.x;
+        // Move enemy
+        transform.pos.x += transform.vel.x * m_game->deltaTime();
         transform.pos.y += transform.vel.y;
     }
 }
-
 
