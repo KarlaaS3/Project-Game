@@ -36,6 +36,7 @@ void Scene_Play::updateBackground() {
 }
 
 
+
 void Scene_Play::registerActions() {
     registerAction(sf::Keyboard::P, "PAUSE");
     registerAction(sf::Keyboard::Escape, "QUIT");
@@ -72,7 +73,6 @@ void Scene_Play::update() {
 
     playerCheckState();
 	checkWinCondition();
-	updateView();
 	updateBackground();
 	//sDeb
 }
@@ -83,11 +83,22 @@ void Scene_Play::sRender() {
     static const sf::Color pauseBackground(50, 50, 150);
     m_game->window().clear((m_isPaused ? pauseBackground : background));
 
-    // **Always use the default view to keep everything static**
-    m_game->window().setView(m_game->window().getDefaultView());
 
-    // Draw the background image (this will stay fixed)
-    m_game->window().draw(m_backgroundSprite);
+    auto& pPos = m_player->getComponent<CTransform>().pos;
+    float centerX = std::max(m_game->window().getSize().x / 2.f, pPos.x);
+    sf::View view = m_game->window().getView();
+    view.setCenter(centerX, m_game->window().getSize().y - view.getCenter().y);
+    m_game->window().setView(view);
+
+    // Draw the background image multiple times to create a tiling effect
+    int textureWidth = m_backgroundSprite.getTexture()->getSize().x;
+    int windowWidth = m_game->window().getSize().x;
+    int numTiles = (windowWidth / textureWidth) + 2.5; // Number of tiles to draw
+
+    for (int i = -1; i < numTiles; ++i) {
+        m_backgroundSprite.setPosition(i * textureWidth - (static_cast<int>(pPos.x * 0.5f) % textureWidth), 0);
+        m_game->window().draw(m_backgroundSprite);
+    }
 
     if (m_hasEnded) {
         drawWinScreen();
@@ -195,6 +206,7 @@ void Scene_Play::sMovement() {
         pt.vel.y = -m_playerConfig.JUMP;
     }
 
+
     // gravity
     pt.vel.y += m_playerConfig.GRAVITY;
     pt.vel.x = pt.vel.x * m_playerConfig.SPEED;
@@ -205,25 +217,12 @@ void Scene_Play::sMovement() {
     if (pt.vel.x > 0.1)
         m_player->getComponent<CState>().unSet(CState::isFacingLeft);
 
-    // Define the boundaries of the window
-    const float leftBoundary = 0.0f;
-    const float rightBoundary = static_cast<float>(m_game->window().getSize().x);
 
     // move all entities
     for (auto e : m_entityManager.getEntities()) {
         auto& tx = e->getComponent<CTransform>();
         tx.prevPos = tx.pos;
         tx.pos += tx.vel;
-
-        // Check collision with window boundaries
-        if (tx.pos.x < leftBoundary) {
-            tx.pos.x = leftBoundary;
-            tx.vel.x = 0;
-        }
-        if (tx.pos.x > rightBoundary) {
-            tx.pos.x = rightBoundary;
-            tx.vel.x = 0;
-        }
     }
 }
 
@@ -507,27 +506,6 @@ void Scene_Play::sDoAction(const Action& action) {
     }
 }
 
-void Scene_Play::updateView() {
-    auto& playerTransform = m_player->getComponent<CTransform>();
-    sf::View view = m_game->window().getView();
-
-    // Center the view on the player's horizontal position
-    view.setCenter(playerTransform.pos.x, view.getCenter().y);
-
-    // Ensure the view does not go out of the level boundaries
-    float halfViewWidth = view.getSize().x / 2;
-    float levelWidth = 1200; // Adjust this value based on your level width
-
-    if (view.getCenter().x - halfViewWidth < 0) {
-        view.setCenter(halfViewWidth, view.getCenter().y);
-    }
-    if (view.getCenter().x + halfViewWidth > levelWidth) {
-        view.setCenter(levelWidth - halfViewWidth, view.getCenter().y);
-    }
-
-    m_game->window().setView(view);
-}
-
 
 void Scene_Play::sAnimation() {
     // m_player->getComponent<CAnimation>().animation.update();
@@ -791,6 +769,7 @@ void Scene_Play::sEnemyBehavior() {
     for (auto e : enemies) {
         auto& etx = e->getComponent<CTransform>();
         auto& estate = e->getComponent<CState>();
+        auto& platformInfo = e->getComponent<CPlatformInfo>();
         auto& enemyConfig = m_enemyConfig;
 
         bool playerDetected = false;
@@ -798,21 +777,30 @@ void Scene_Play::sEnemyBehavior() {
 
         for (auto p : players) {
             auto& ptx = p->getComponent<CTransform>();
-            float distance = std::abs(etx.pos.x - ptx.pos.x);
-            // If player is within detection range, enemy gets active
-            if (distance < enemyConfig.DETECTION_RANGE) {
-                playerDetected = true;
-            }
-            // If within attack range, start attacking instead of moving towards the player
-            if (distance < enemyConfig.ATTACK_RANGE) {
-                playerInAttackRange = true;
-                estate.set(CState::isAttacking);
-                std::cout << "Enemy attacking!" << std::endl;
-            }
-            else {
-                estate.unSet(CState::isAttacking);
+
+            // Check if the player is on the same platform
+            bool samePlatform = (ptx.pos.x >= platformInfo.platformStartX && ptx.pos.x <= platformInfo.platformEndX);
+
+            if (samePlatform) {
+                float distance = std::abs(etx.pos.x - ptx.pos.x);
+
+                // If player is within detection range, enemy gets active
+                if (distance < enemyConfig.DETECTION_RANGE) {
+                    playerDetected = true;
+                }
+
+                // If within attack range, start attacking instead of moving towards the player
+                if (distance < enemyConfig.ATTACK_RANGE) {
+                    playerInAttackRange = true;
+                    estate.set(CState::isAttacking);
+                    std::cout << "Enemy attacking!" << std::endl;
+                }
+                else {
+                    estate.unSet(CState::isAttacking);
+                }
             }
         }
+
         // If the player is in detection range but not in attack range,
         if (playerDetected && !playerInAttackRange) {
             if (estate.test(CState::isFacingLeft)) {
@@ -821,7 +809,7 @@ void Scene_Play::sEnemyBehavior() {
             else {
                 etx.vel.x = enemyConfig.SPEED;
             }
-            
+
             if (checkPlatformEdge(e)) {
                 if (estate.test(CState::isFacingLeft)) {
                     estate.unSet(CState::isFacingLeft);
@@ -834,10 +822,10 @@ void Scene_Play::sEnemyBehavior() {
         // If attacking, move left and right instead of following the player
         else if (playerInAttackRange) {
             if (estate.test(CState::isFacingLeft)) {
-                etx.vel.x = -enemyConfig.SPEED; 
+                etx.vel.x = -enemyConfig.SPEED;
             }
             else {
-                etx.vel.x = enemyConfig.SPEED; 
+                etx.vel.x = enemyConfig.SPEED;
             }
             // Change direction randomly to simulate enemy attacking motion
             if (rand() % 100 < 3) { // 3% chance to change direction each frame
@@ -853,10 +841,12 @@ void Scene_Play::sEnemyBehavior() {
         else {
             etx.vel.x = 0; // If no player is nearby, enemy stays still
         }
+
         // Apply gravity if not grounded
         if (!estate.test(CState::isGrounded)) {
             etx.vel.y += enemyConfig.GRAVITY;
         }
+
         // Update enemy position
         etx.pos += etx.vel;
 
@@ -866,6 +856,7 @@ void Scene_Play::sEnemyBehavior() {
         }
     }
 }
+
 
 bool Scene_Play::checkPlatformEdge(std::shared_ptr<Entity> enemy) {
     auto& transform = enemy->getComponent<CTransform>();
