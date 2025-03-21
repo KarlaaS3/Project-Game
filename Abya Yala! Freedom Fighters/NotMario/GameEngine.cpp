@@ -75,24 +75,27 @@ void GameEngine::quit()
 
 void GameEngine::run()
 {
-	const sf::Time SPF = sf::seconds(1.0f / 60.f);  // seconds per frame for 60 fps 
+
+	const sf::Time SPF = sf::seconds(1.0f / 60.f);  // Fixed update time step (60 FPS)
 
 	sf::Clock clock;
 	sf::Time timeSinceLastUpdate = sf::Time::Zero;
 
-	// as is from youtube video
 	while (isRunning())
 	{
-		sUserInput();								// get user input
+		timeSinceLastUpdate += clock.restart(); // Get time elapsed since last frame
 
-		timeSinceLastUpdate += clock.restart();		 
-		while (timeSinceLastUpdate > SPF)
+		while (timeSinceLastUpdate > SPF)  // Ensure fixed time step
 		{
-			currentScene()->update();				// update world
+			updateDeltaTime();  // Update deltaTime properly here
+
+			sUserInput();       // Get user input
+			currentScene()->update(); // Update world logic
+
 			timeSinceLastUpdate -= SPF;
 		}
 
-		currentScene()->sRender();					// render world
+		currentScene()->sRender();  // Render world
 	}
 }
 

@@ -278,6 +278,7 @@ void Scene_Play::sCollision() {
     auto enemies = m_entityManager.getEntities("enemy");
     auto arrows = m_entityManager.getEntities("arrow");
     auto bullets = m_entityManager.getEntities("bullet");
+    auto enemyBullets = m_entityManager.getEntities("enemy_bullet");
     auto coins = m_entityManager.getEntities("coin");
 
     for (auto p : players) {
@@ -340,7 +341,26 @@ void Scene_Play::sCollision() {
             auto overlap = Physics::getOverlap(p, c);
             if (overlap.x > 0 && overlap.y > 0) {
                 c->destroy(); // Destroy the coin
-                collectedCoins++; 
+                collectedCoins++;
+            }
+        }
+
+        // Check collision with enemy bullets
+        for (auto eb : enemyBullets) {
+            auto overlap = Physics::getOverlap(p, eb);
+            if (overlap.x > 0 && overlap.y > 0) {
+                auto& playerLifespan = p->getComponent<CLifespan>();
+                playerLifespan.remaining--;
+
+                if (playerLifespan.remaining <= 0) {
+                    p->destroy();
+                    onEnd();
+                }
+                else {
+                    p->getComponent<CTransform>().vel.y = 5.f;
+                    p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("PlayerHurt");
+                }
+                eb->destroy(); // Destroy the enemy bullet
             }
         }
     }
@@ -409,22 +429,21 @@ void Scene_Play::sCollision() {
     for (auto p : players) {
         for (auto e : enemies) {
             auto overlap = Physics::getOverlap(p, e);
-            if (overlap.x > 0 && overlap.y > 0) {  
+            if (overlap.x > 0 && overlap.y > 0) {
                 auto& playerLifespan = p->getComponent<CLifespan>();
-                playerLifespan.remaining--;  
+                playerLifespan.remaining--;
 
                 if (playerLifespan.remaining <= 0) {
-                    p->destroy(); 
-                    onEnd(); 
+                    p->destroy();
+                    onEnd();
                 }
                 else {
-					p->getComponent<CTransform>().vel.y = 5.f;
+                    p->getComponent<CTransform>().vel.y = 5.f;
                     p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("PlayerHurt");
                 }
             }
         }
     }
-
 
     // Enemy hit by an arrow
     for (auto e : enemies) {
@@ -436,7 +455,7 @@ void Scene_Play::sCollision() {
                 if (enemyHealth.remaining <= 0) {
                     e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Death");
                     e->destroy(); // Enemy dies
-					onEnd(); // Call game over function
+                    onEnd(); // Call game over function
                 }
                 else {
                     e->getComponent<CState>().unSet(CState::isGrounded);
@@ -448,6 +467,7 @@ void Scene_Play::sCollision() {
         }
     }
 }
+
 
 void Scene_Play::sDoAction(const Action& action) {
 
@@ -750,6 +770,8 @@ void Scene_Play::spawnEnemy(const std::vector<EnemyConfig>& configs) {
         enemy->addComponent<CState>();
         enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
         enemy->addComponent<CHealth>(100);
+        enemy->addComponent<CAttackTimer>(2.0f);
+
         Vec2 pos = gridToMidPixel(config.X, config.Y, enemy);
         std::cout << "Converted position: " << pos.x << ", " << pos.y << std::endl;
         enemy->addComponent<CTransform>(pos);
@@ -758,105 +780,10 @@ void Scene_Play::spawnEnemy(const std::vector<EnemyConfig>& configs) {
         transform.vel.x = config.SPEED;
         transform.vel.y = config.GRAVITY;
 
-        std::cout << "Spawned enemy at: " << config.X << ", " << config.Y << " with weapon: " << config.WEAPON << std::endl;
+        std::cout << "Spawned enemy at: " << config.X << ", " << config.Y
+            << " with weapon: " << config.WEAPON << std::endl;
     }
 }
-
-void Scene_Play::sEnemyBehavior() {
-    auto players = m_entityManager.getEntities("player");
-    auto enemies = m_entityManager.getEntities("enemy");
-
-    for (auto e : enemies) {
-        auto& etx = e->getComponent<CTransform>();
-        auto& estate = e->getComponent<CState>();
-        auto& platformInfo = e->getComponent<CPlatformInfo>();
-        auto& enemyConfig = m_enemyConfig;
-
-        bool playerDetected = false;
-        bool playerInAttackRange = false;
-
-        for (auto p : players) {
-            auto& ptx = p->getComponent<CTransform>();
-
-            // Check if the player is on the same platform
-            bool samePlatform = (ptx.pos.x >= platformInfo.platformStartX && ptx.pos.x <= platformInfo.platformEndX);
-
-            if (samePlatform) {
-                float distance = std::abs(etx.pos.x - ptx.pos.x);
-
-                // If player is within detection range, enemy gets active
-                if (distance < enemyConfig.DETECTION_RANGE) {
-                    playerDetected = true;
-                }
-
-                // If within attack range, start attacking instead of moving towards the player
-                if (distance < enemyConfig.ATTACK_RANGE) {
-                    playerInAttackRange = true;
-                    estate.set(CState::isAttacking);
-                    std::cout << "Enemy attacking!" << std::endl;
-                }
-                else {
-                    estate.unSet(CState::isAttacking);
-                }
-            }
-        }
-
-        // If the player is in detection range but not in attack range,
-        if (playerDetected && !playerInAttackRange) {
-            if (estate.test(CState::isFacingLeft)) {
-                etx.vel.x = -enemyConfig.SPEED;
-            }
-            else {
-                etx.vel.x = enemyConfig.SPEED;
-            }
-
-            if (checkPlatformEdge(e)) {
-                if (estate.test(CState::isFacingLeft)) {
-                    estate.unSet(CState::isFacingLeft);
-                }
-                else {
-                    estate.set(CState::isFacingLeft);
-                }
-            }
-        }
-        // If attacking, move left and right instead of following the player
-        else if (playerInAttackRange) {
-            if (estate.test(CState::isFacingLeft)) {
-                etx.vel.x = -enemyConfig.SPEED;
-            }
-            else {
-                etx.vel.x = enemyConfig.SPEED;
-            }
-            // Change direction randomly to simulate enemy attacking motion
-            if (rand() % 100 < 3) { // 3% chance to change direction each frame
-                if (estate.test(CState::isFacingLeft)) {
-                    estate.unSet(CState::isFacingLeft);
-                }
-                else {
-                    estate.set(CState::isFacingLeft);
-                }
-            }
-            e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Attack");
-        }
-        else {
-            etx.vel.x = 0; // If no player is nearby, enemy stays still
-        }
-
-        // Apply gravity if not grounded
-        if (!estate.test(CState::isGrounded)) {
-            etx.vel.y += enemyConfig.GRAVITY;
-        }
-
-        // Update enemy position
-        etx.pos += etx.vel;
-
-        if (std::abs(etx.vel.x) > 0.1f) {
-            etx.scale.x = (etx.vel.x > 0) ? 1 : -1;
-            e->getComponent<CAnimation>().setFlipped(etx.vel.x < 0);
-        }
-    }
-}
-
 
 bool Scene_Play::checkPlatformEdge(std::shared_ptr<Entity> enemy) {
     auto& transform = enemy->getComponent<CTransform>();
@@ -928,7 +855,100 @@ void Scene_Play::checkLoseCondition()
 	}
 }
 
+void Scene_Play::meleeAttack(std::shared_ptr<Entity> enemy) {
+    // Implement melee attack logic
+    std::cout << "Enemy performs melee attack!" << std::endl;
+    // Example: Reduce player's health
+    auto players = m_entityManager.getEntities("player");
+    for (auto p : players) {
+        auto& ptx = p->getComponent<CTransform>();
+        auto& etx = enemy->getComponent<CTransform>();
+        float distance = std::abs(etx.pos.x - ptx.pos.x);
+        if (distance < 50) { // Example melee range
+            auto& playerHealth = p->getComponent<CHealth>();
+            playerHealth.remaining -= 10; // Reduce player's health
+        }
+    }
+}
 
+void Scene_Play::rangedAttack(std::shared_ptr<Entity> enemy) {
+    // Implement ranged attack logic
+    std::cout << "Enemy performs ranged attack!" << std::endl;
+    // Example: Spawn an enemy bullet entity
+    auto& etx = enemy->getComponent<CTransform>();
+    auto enemyBullet = m_entityManager.addEntity("enemy_bullet");
+    enemyBullet->addComponent<CAnimation>(m_game->assets().getAnimation("Arrow"), true);
+    enemyBullet->addComponent<CTransform>(etx.pos);
+    enemyBullet->addComponent<CBoundingBox>(Vec2(10, 10)); // Example size
+    enemyBullet->addComponent<CLifespan>(50);
 
+    bool isFacingLeft = enemy->getComponent<CState>().test(CState::isFacingLeft);
+    enemyBullet->getComponent<CAnimation>().setFlipped(isFacingLeft);
+
+    enemyBullet->getComponent<CTransform>().vel.x = 5 * (isFacingLeft ? -1 : 1);
+    enemyBullet->getComponent<CTransform>().vel.y = 0;
+
+    // Set the scale based on the velocity
+    if (std::abs(enemyBullet->getComponent<CTransform>().vel.x) > 0.1f) {
+        enemyBullet->getComponent<CTransform>().scale.x = (enemyBullet->getComponent<CTransform>().vel.x > 0) ? 1 : -1;
+    }
+}
+
+void Scene_Play::sEnemyBehavior() {
+    auto enemies = m_entityManager.getEntities("enemy");
+    for (auto enemy : enemies) {
+        if (!enemy->hasComponent<CAttackTimer>()) continue;
+
+        auto& transform = enemy->getComponent<CTransform>();
+        auto& attackTimer = enemy->getComponent<CAttackTimer>();
+
+        // Decrease the timeLeft by deltaTime
+        attackTimer.timeLeft -= m_game->deltaTime();
+
+        bool playerNearby = false;
+
+        // If cooldown is finished, perform attack
+        if (attackTimer.timeLeft <= 0) {
+            auto players = m_entityManager.getEntities("player");
+            for (auto player : players) {
+                auto& playerTransform = player->getComponent<CTransform>();
+                float distance = std::abs(transform.pos.x - playerTransform.pos.x);
+
+                if (distance < 200) {  // Player is in range
+                    if (distance < 50) {
+                        meleeAttack(enemy);  // Melee attack if close
+                    }
+                    else {
+                        rangedAttack(enemy);  // Ranged attack if farther
+                    }
+
+                    // Reset the attack timer after performing the attack
+                    attackTimer.timeLeft = 2.0f;  // Reset cooldown to 2 seconds
+                    break;
+                }
+            }
+        }
+
+        // If no player is nearby, continue patrolling
+        if (!playerNearby) {
+            if (checkPlatformEdge(enemy)) {
+                transform.vel.x *= -1;  // Reverse direction
+                transform.scale.x *= -1;  // Flip sprite direction
+
+                // Update the facing direction state
+                if (transform.vel.x < 0) {
+                    enemy->getComponent<CState>().set(CState::isFacingLeft);
+                }
+                else {
+                    enemy->getComponent<CState>().unSet(CState::isFacingLeft);
+                }
+            }
+        }
+
+        // Move enemy (only if patrolling)
+        transform.pos.x += transform.vel.x;
+        transform.pos.y += transform.vel.y;
+    }
+}
 
 

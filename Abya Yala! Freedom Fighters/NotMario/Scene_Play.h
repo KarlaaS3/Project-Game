@@ -91,8 +91,9 @@ public:
 	void sEnemyBehavior();
 	void checkWinCondition();
 	void checkLoseCondition();
-	
- 
+
+	void meleeAttack(std::shared_ptr<Entity> enemy);
+	void rangedAttack(std::shared_ptr<Entity> enemy);
 	bool checkPlatformEdge(std::shared_ptr<Entity> enemy);
 
 };

@@ -120,6 +120,12 @@ struct CGravity : public Component
 	CGravity(float g ) : g(g) {}
 };
 
+struct CAttackTimer {
+	float timeLeft;
+	bool has{ false };
+	CAttackTimer(float cooldown = 0) : timeLeft(cooldown) {}
+};
+
 
 struct CState : public Component
 {

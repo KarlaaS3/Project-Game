@@ -21,6 +21,8 @@ public:
 	SceneMap			m_sceneMap;
 	size_t				m_simulationSpeed{ 1 };
 	bool				m_running{ true };
+	float               m_deltaTime = 0.0f;
+	sf::Clock m_clock;
 
 
 public:
@@ -44,6 +46,12 @@ public:
 	sf::RenderWindow& window();
 	const Assets& assets() const;
 	bool isRunning();
+
+	void updateDeltaTime() {
+		m_deltaTime = m_clock.restart().asSeconds();
+	}
+
+	float deltaTime() const { return m_deltaTime; }
 
 };
 
