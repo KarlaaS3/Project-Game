@@ -22,9 +22,8 @@ void Scene_Play::init(const std::string& levelPath) {
     m_backgroundSprite.setTexture(backgroundTexture);
 
     loadLevel(levelPath);
-    createGround();
 }
-
+/*
 void Scene_Play::updateBackground() {
     auto& playerTransform = m_player->getComponent<CTransform>();
 
@@ -33,7 +32,7 @@ void Scene_Play::updateBackground() {
 
     // Set the texture rect to create a scrolling effect
     m_backgroundSprite.setTextureRect(sf::IntRect(backgroundX, 0, m_game->window().getSize().x, m_game->window().getSize().y));
-}
+}*/
 
 void Scene_Play::registerActions() {
     registerAction(sf::Keyboard::P, "PAUSE");
@@ -71,8 +70,8 @@ void Scene_Play::update() {
 
     playerCheckState();
 	checkWinCondition();
-	updateBackground();
-	//sDeb
+	//updateBackground();
+	checkLoseCondition();
 }
 
 void Scene_Play::sRender() {
@@ -130,14 +129,6 @@ void Scene_Play::sRender() {
             if (e->hasComponent<CBoundingBox>()) {
                 auto& box = e->getComponent<CBoundingBox>();
                 auto& transform = e->getComponent<CTransform>();
-                sf::RectangleShape rect;
-                rect.setSize(sf::Vector2f(box.size.x, box.size.y));
-                rect.setOrigin(sf::Vector2f(box.halfSize.x, box.halfSize.y));
-                rect.setPosition(transform.pos.x, transform.pos.y);
-                rect.setFillColor(sf::Color(0, 0, 0, 0));
-                rect.setOutlineColor(sf::Color(0, 255, 0));
-                rect.setOutlineThickness(1.f);
-                m_game->window().draw(rect);
             }
         }
     }
@@ -256,6 +247,17 @@ void Scene_Play::playerCheckState() {
             state.unSet(CState::isRunning);
         }
     }
+}
+
+void Scene_Play::respawnPlayer(std::shared_ptr<Entity> player) {
+    // Reset player position to the starting point
+    player->getComponent<CTransform>().pos = gridToMidPixel(m_playerConfig.X, m_playerConfig.Y, player);
+    player->getComponent<CTransform>().vel = Vec2(0.f, 0.f);
+
+    // Reset player state
+    player->getComponent<CState>().unSet(CState::isGrounded);
+    player->getComponent<CInput>().canJump = true;
+    player->getComponent<CInput>().canShoot = true;
 }
 
 void Scene_Play::sLifespan() {
@@ -805,23 +807,6 @@ bool Scene_Play::checkPlatformEdge(std::shared_ptr<Entity> enemy) {
     return false;
 }
 
-void Scene_Play::createGround() {
-
-    float groundWidth = m_game->window().getSize().x; 
-    float groundHeight = 30.0f;  
-
-    float groundX = groundWidth / 2;
-    float groundY = m_game->window().getSize().y - (groundHeight / 2);
-
-
-    auto ground = m_entityManager.addEntity("ground");
-
-    // Add transform component
-    ground->addComponent<CTransform>(Vec2(groundX, groundY));
-
-    // Add bounding box for collision detection
-    ground->addComponent<CBoundingBox>(Vec2(groundWidth, groundHeight));
-}
 
 void Scene_Play::checkWinCondition() {
     if (m_hasEnded) return;
@@ -843,17 +828,30 @@ void Scene_Play::checkWinCondition() {
     }
 }
 
-void Scene_Play::checkLoseCondition()
-{
-	if (m_hasEnded) return;
-	auto players = m_entityManager.getEntities("player");
-	for (auto& player : players) {
-		if (player->getComponent<CLifespan>().remaining <= 0) {
-			m_hasEnded = true;
-			onEnd();
-		}
-	}
+void Scene_Play::checkLoseCondition() {
+    if (m_hasEnded) return;
+
+    auto players = m_entityManager.getEntities("player");
+    for (auto& player : players) {
+        auto& playerTransform = player->getComponent<CTransform>();
+
+        // Check if the player has fallen off the screen
+        if (playerTransform.pos.y > m_game->window().getSize().y) {
+            auto& playerLifespan = player->getComponent<CLifespan>();
+            playerLifespan.remaining--;
+
+            if (playerLifespan.remaining <= 0) {
+                m_hasEnded = true;
+                onEnd();
+            }
+            else {
+                respawnPlayer(player);
+            }
+        }
+    }
 }
+
+
 
 void Scene_Play::meleeAttack(std::shared_ptr<Entity> enemy) {
     // Implement melee attack logic
