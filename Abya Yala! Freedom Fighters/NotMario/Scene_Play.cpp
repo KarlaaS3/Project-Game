@@ -23,16 +23,7 @@ void Scene_Play::init(const std::string& levelPath) {
 
     loadLevel(levelPath);
 }
-/*
-void Scene_Play::updateBackground() {
-    auto& playerTransform = m_player->getComponent<CTransform>();
 
-    // Calculate the background position based on the player's horizontal position
-    float backgroundX = playerTransform.pos.x * 0.3f; 
-
-    // Set the texture rect to create a scrolling effect
-    m_backgroundSprite.setTextureRect(sf::IntRect(backgroundX, 0, m_game->window().getSize().x, m_game->window().getSize().y));
-}*/
 
 void Scene_Play::registerActions() {
     registerAction(sf::Keyboard::P, "PAUSE");
