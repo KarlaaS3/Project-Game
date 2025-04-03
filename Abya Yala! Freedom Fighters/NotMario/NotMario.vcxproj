@@ -215,9 +215,11 @@
     <ClCompile Include="Physics.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Scene.Level2.cpp" />
+    <ClCompile Include="Scene_Instructions.cpp" />
     <ClCompile Include="Scene_Menu.cpp" />
     <ClCompile Include="Scene_Play.cpp" />
     <ClCompile Include="source.cpp" />
+    <ClCompile Include="TransitionEffect.cpp" />
     <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="Vec2.cpp" />
   </ItemGroup>
@@ -232,8 +234,10 @@
     <ClInclude Include="GameEngine.h" />
     <ClInclude Include="Physics.h" />
     <ClInclude Include="Scene.h" />
+    <ClInclude Include="Scene_Instructions.h" />
     <ClInclude Include="Scene_Menu.h" />
     <ClInclude Include="Scene_Play.h" />
+    <ClInclude Include="TransitionEffect.h" />
     <ClInclude Include="Utilities.h" />
     <ClInclude Include="Vec2.h" />
   </ItemGroup>

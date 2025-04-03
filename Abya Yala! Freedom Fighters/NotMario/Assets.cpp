@@ -1,17 +1,17 @@
 #include "Assets.h"
 #include <cassert>
+#include <iostream>
+#include <fstream>
+
 
 Assets::Assets()
 {
 }
 
-
-void Assets::loadFromFile(const std::string& path) 
-{
+void Assets::loadFromFile(const std::string& path) {
     // Read Config file 
     std::ifstream confFile(path);
-    if (confFile.fail())
-    {
+    if (confFile.fail()) {
         std::cerr << "Open file: " << path << " failed\n";
         confFile.close();
         exit(1);
@@ -19,41 +19,39 @@ void Assets::loadFromFile(const std::string& path)
 
     std::string token{ "" };
     confFile >> token;
-    while (confFile)
-    {
-        if (token == "Texture")
-        {
+    while (confFile) {
+        if (token == "Texture") {
             std::string name, path;
             confFile >> name >> path;
             addTexture(name, path);
         }
-        else if (token == "Animation")
-        {
+        else if (token == "Animation") {
             std::string name, texture;
             size_t frames, speed;
             confFile >> name >> texture >> frames >> speed;
             addAnimation(name, texture, frames, speed);
         }
-        else if (token == "Font")
-        {
+        else if (token == "Font") {
             std::string name, path;
             confFile >> name >> path;
             addFont(name, path);
         }
-        else if (token[0] == '#')
-        {
+        else if (token == "Shader") {
+            std::string name, path;
+            confFile >> name >> path;
+            addShader(name, path);
+        }
+        else if (token[0] == '#') {
             ; // ignore comments
         }
-        else
-        {
-            std::cerr << "Unkown asset type: " << token << std::endl;
+        else {
+            std::cerr << "Unknown asset type: " << token << std::endl;
         }
 
-        confFile >> token; 
+        confFile >> token;
     }
     confFile.close();
 }
-
 
 void Assets::addTexture(const std::string& textureName, const std::string& path, bool smooth)
 {
@@ -62,7 +60,7 @@ void Assets::addTexture(const std::string& textureName, const std::string& path,
     {
         std::cerr << "Could not load texture file: " << path << std::endl;
         m_textureMap.erase(textureName);
-    } 
+    }
     else
     {
         m_textureMap.at(textureName).setSmooth(smooth);
@@ -86,15 +84,19 @@ void Assets::addFont(const std::string& fontName, const std::string& path)
     else
     {
         std::cout << "Loaded font: " << path << std::endl;
-    } 
+    }
 }
 
-/*
-const sf::Texture& Assets::getTexture(const std::string& textureName) const
-{
-    // assert(m_textureMap.contains(textureName)); not required .at() throws out_of_range excpt
-    return m_textureMap.at(textureName);
-}*/
+void Assets::addShader(const std::string& shaderName, const std::string& path) {
+    auto shader = std::make_unique<sf::Shader>();
+    if (!shader->loadFromFile(path, sf::Shader::Fragment)) {
+        std::cerr << "Could not load shader file: " << path << std::endl;
+    }
+    else {
+        m_shaderMap[shaderName] = std::move(shader);
+        std::cout << "Loaded shader: " << shaderName << " from " << path << std::endl;
+    }
+}
 
 const sf::Texture& Assets::getTexture(const std::string& textureName) const
 {
@@ -108,12 +110,6 @@ const sf::Texture& Assets::getTexture(const std::string& textureName) const
     }
 }
 
-
-/*const Animation& Assets::getAnimation(const std::string& animationName) const
-{
-    return m_animatioMap.at(animationName);
-}*/
-
 const Animation& Assets::getAnimation(const std::string& animationName) const {
     auto it = m_animatioMap.find(animationName);
     if (it != m_animatioMap.end()) {
@@ -125,7 +121,24 @@ const Animation& Assets::getAnimation(const std::string& animationName) const {
     }
 }
 
-const sf::Font& Assets::getFont(const std::string& fontName) const
-{
-    return m_fontMap.at(fontName);
+const sf::Font& Assets::getFont(const std::string& fontName) const {
+    auto it = m_fontMap.find(fontName);
+    if (it != m_fontMap.end()) {
+        return it->second;
+    }
+    else {
+        std::cerr << "Font not found: " << fontName << std::endl;
+        throw std::out_of_range("Font not found: " + fontName);
+    }
+}
+
+const sf::Shader& Assets::getShader(const std::string& shaderName) const {
+    auto it = m_shaderMap.find(shaderName);
+    if (it != m_shaderMap.end()) {
+        return *(it->second);
+    }
+    else {
+        std::cerr << "Shader not found: " << shaderName << std::endl;
+        throw std::out_of_range("Shader not found: " + shaderName);
+    }
 }
