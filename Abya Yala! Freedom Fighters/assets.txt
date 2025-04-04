@@ -2,6 +2,8 @@ Window 1280 720 60 0
 
 Shader Gradient         ../assets/shaders/gradient.frag
 
+Music Menu              ../assets/music/menu_music.mp3
+
 Font Bungee             ../assets/fonts/bungee.ttf
 Font Arial 		../assets/fonts/arial.ttf  
 Font Mario 		../assets/fonts/arial.ttf  

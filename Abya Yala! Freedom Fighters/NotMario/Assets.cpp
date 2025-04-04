@@ -41,6 +41,16 @@ void Assets::loadFromFile(const std::string& path) {
             confFile >> name >> path;
             addShader(name, path);
         }
+        else if (token == "Sound") { 
+            std::string name, path;
+            confFile >> name >> path;
+            addSound(name, path);
+        }
+		else if (token == "Music") {
+			std::string name, path;
+			confFile >> name >> path;
+			addMusic(name, path);
+		}
         else if (token[0] == '#') {
             ; // ignore comments
         }
@@ -87,6 +97,7 @@ void Assets::addFont(const std::string& fontName, const std::string& path)
     }
 }
 
+
 void Assets::addShader(const std::string& shaderName, const std::string& path) {
     auto shader = std::make_unique<sf::Shader>();
     if (!shader->loadFromFile(path, sf::Shader::Fragment)) {
@@ -131,6 +142,44 @@ const sf::Font& Assets::getFont(const std::string& fontName) const {
         throw std::out_of_range("Font not found: " + fontName);
     }
 }
+
+void Assets::addSound(const std::string& soundEffectName, const std::string& path) {
+    auto soundBuffer = std::make_unique<sf::SoundBuffer>();
+    if (!soundBuffer->loadFromFile(path)) {
+        std::cerr << "Could not load sound file: " << path << std::endl;
+    }
+    else {
+        m_soundMap[soundEffectName] = std::move(soundBuffer);
+        std::cout << "Loaded sound: " << soundEffectName << " from " << path << std::endl;
+    }
+}
+
+const sf::SoundBuffer& Assets::getSound(const std::string& soundEffectName) const {
+    auto it = m_soundMap.find(soundEffectName);
+    if (it != m_soundMap.end()) {
+        return *(it->second);
+    }
+    else {
+        std::cerr << "Sound not found: " << soundEffectName << std::endl;
+        throw std::out_of_range("Sound not found: " + soundEffectName);
+    }
+}
+
+void Assets::addMusic(const std::string& musicName, const std::string& path) {
+    m_musicMap[musicName] = path;
+}
+
+const std::string& Assets::getMusic(const std::string& musicName) const {
+    auto it = m_musicMap.find(musicName);
+    if (it != m_musicMap.end()) {
+        return it->second;
+    }
+    else {
+        std::cerr << "Music not found: " << musicName << std::endl;
+        throw std::out_of_range("Music not found: " + musicName);
+    }
+}
+
 
 const sf::Shader& Assets::getShader(const std::string& shaderName) const {
     auto it = m_shaderMap.find(shaderName);

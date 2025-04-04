@@ -14,14 +14,17 @@ private:
     std::map<std::string, sf::Texture> m_textureMap;
     std::map<std::string, Animation> m_animatioMap;
     std::map<std::string, sf::Font> m_fontMap;
-    std::map<std::string, std::unique_ptr<sf::SoundBuffer>> _soundEffects;
-    std::map<std::string, std::unique_ptr<sf::Shader>> m_shaderMap; // Use unique_ptr
+    std::map<std::string, std::unique_ptr<sf::SoundBuffer>> m_soundMap; 
+    std::map<std::string, std::unique_ptr<sf::Shader>> m_shaderMap;
+	std::map<std::string, std::string> m_musicMap; 
+
 
     void addTexture(const std::string& textureName, const std::string& path, bool smooth = true);
     void addAnimation(const std::string& animationName, const std::string& textureName, size_t frameCount, size_t speed);
     void addFont(const std::string& fontName, const std::string& path);
     void addSound(const std::string& soundEffectName, const std::string& path);
-    void addShader(const std::string& shaderName, const std::string& path); // Updated
+    void addShader(const std::string& shaderName, const std::string& path); 
+    void addMusic(const std::string& musicName, const std::string& path);
 
 public:
     Assets();
@@ -32,5 +35,6 @@ public:
     const sf::Font& getFont(const std::string& fontName) const;
     const sf::SoundBuffer& getSound(const std::string& soundEffectName) const;
     const sf::Shader& getShader(const std::string& shaderName) const;
+	const std::string& getMusic(const std::string& musicName) const;
 };
 

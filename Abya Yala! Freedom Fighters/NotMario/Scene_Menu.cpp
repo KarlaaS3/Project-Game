@@ -8,6 +8,7 @@
 
 void Scene_Menu::onEnd()
 {
+    m_backgroundMusic.stop(); // Stop the background music
     m_game->window().close();
 }
 
@@ -23,7 +24,7 @@ void Scene_Menu::init()
     registerAction(sf::Keyboard::Up, "UP");
     registerAction(sf::Keyboard::S, "DOWN");
     registerAction(sf::Keyboard::Down, "DOWN");
-    registerAction(sf::Keyboard::D, "PLAY");
+    registerAction(sf::Keyboard::Enter, "PLAY");
     registerAction(sf::Keyboard::Escape, "QUIT");
 
     m_title = "Abya Yala!"; // Freedom Fighters
@@ -49,11 +50,17 @@ void Scene_Menu::init()
     m_menuIndex = 0;
     m_backgroundSprite.setTextureRect(sf::IntRect(0, 0, m_game->window().getSize().x, m_game->window().getSize().y));
 
-    // Load sounds
-    m_hoverSoundBuffer.loadFromFile("../assets/sounds/hover.wav");
-    m_selectSoundBuffer.loadFromFile("../assets/sounds/select.wav");
-    m_hoverSound.setBuffer(m_hoverSoundBuffer);
-    m_selectSound.setBuffer(m_selectSoundBuffer);
+    // Load sounds from assets
+    //m_hoverSound.setBuffer(m_game->assets().getSound("hover"));
+    //m_selectSound.setBuffer(m_game->assets().getSound("select"));
+
+    if (!m_backgroundMusic.openFromFile(m_game->assets().getMusic("Menu"))) {
+        std::cerr << "ERROR: Failed to load background music!" << std::endl;
+    }
+    else {
+        m_backgroundMusic.setLoop(true); // Loop the music
+        m_backgroundMusic.play(); // Play the music
+    }
 
     // Set the size of the transition effect rectangle
     m_transitionEffect.setSize(sf::Vector2f(m_game->window().getSize().x, m_game->window().getSize().y));
@@ -154,6 +161,8 @@ void drawGradientText(sf::RenderWindow& window, sf::Text& text, const sf::Color&
 
 void Scene_Menu::sRender() {
     const size_t CHAR_SIZE{ 64 }; // Define CHAR_SIZE within the scope of sRender
+    const size_t TITLE_SIZE{ 80 }; // Define TITLE_SIZE for the title
+    const size_t SUBTITLE_SIZE{ 70 }; // Define SUBTITLE_SIZE for the subtitle
 
     sf::View view = m_game->window().getView();
     view.setCenter(m_game->window().getSize().x / 2.f, m_game->window().getSize().y / 2.f);
@@ -168,7 +177,7 @@ void Scene_Menu::sRender() {
     static const sf::Color normalColor(255, 210, 0); // Gold color for normal options
     static const sf::Color redColor(255, 0, 0); // Red color for text
 
-    sf::Text footer("UP: W    DOWN: S   PLAY:D    QUIT: ESC",
+    sf::Text footer("UP: W    DOWN: S   SELECT: ENTER    QUIT: ESC",
         m_game->assets().getFont("Megaman"), 20);
     footer.setFillColor(normalColor);
     footer.setPosition(32, 700);
@@ -177,7 +186,7 @@ void Scene_Menu::sRender() {
     sf::Shader& shader = const_cast<sf::Shader&>(m_game->assets().getShader("Gradient"));
 
     // Center the title text
-    m_menuText.setCharacterSize(CHAR_SIZE); // Ensure title text has normal size
+    m_menuText.setCharacterSize(TITLE_SIZE); // Set title text size
     m_menuText.setFillColor(redColor);
     m_menuText.setString(m_title);
     sf::FloatRect titleBounds = m_menuText.getLocalBounds();
@@ -186,7 +195,7 @@ void Scene_Menu::sRender() {
     drawGradientText(m_game->window(), m_menuText, redColor, normalColor, shader);
 
     // Center the subtitle text
-    m_menuText.setCharacterSize(CHAR_SIZE); // Ensure subtitle text has normal size
+    m_menuText.setCharacterSize(SUBTITLE_SIZE); // Set subtitle text size
     m_menuText.setFillColor(redColor);
     m_menuText.setString(m_subtitle);
     sf::FloatRect subtitleBounds = m_menuText.getLocalBounds();
@@ -215,4 +224,7 @@ void Scene_Menu::sRender() {
     m_transitionEffect.render(m_game->window());
     m_game->window().display();
 }
+
+
+
 

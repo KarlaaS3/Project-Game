@@ -23,7 +23,8 @@ private:
     sf::Sound m_selectSound;
     TransitionEffect m_transitionEffect;
     bool m_sceneChangePending{ false };
-    bool m_applyTransition{ false }; // Add this flag
+    bool m_applyTransition{ false }; 
+    sf::Music m_backgroundMusic;
 
     void loadMenu();
     void init();
