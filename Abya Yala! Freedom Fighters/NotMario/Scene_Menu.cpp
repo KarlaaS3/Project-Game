@@ -1,3 +1,4 @@
+// Created by Karla Serrano on 06/04/2025
 
 #include "Scene_Menu.h"
 #include "Scene_Play.h"
@@ -52,8 +53,8 @@ void Scene_Menu::init()
     m_backgroundSprite.setTextureRect(sf::IntRect(0, 0, m_game->window().getSize().x, m_game->window().getSize().y));
 
     // Load sounds from assets
-    // m_hoverSound.setBuffer(m_game->assets().getSound("hover"));
-    // m_selectSound.setBuffer(m_game->assets().getSound("select"));
+     m_hoverSound.setBuffer(m_game->assets().getSound("Hover"));
+     m_selectSound.setBuffer(m_game->assets().getSound("Select"));
 
     if (!m_backgroundMusic.openFromFile(m_game->assets().getMusic("Menu"))) {
         std::cerr << "ERROR: Failed to load background music!" << std::endl;
@@ -176,7 +177,7 @@ void Scene_Menu::loadMenu()
     std::cout << "SUCCESS: Background texture loaded correctly!" << std::endl;
 }
 
-void drawGradientText(sf::RenderWindow& window, sf::Text& text, const sf::Color& gradientTop, const sf::Color& gradientBottom, sf::Shader& shader) {
+static void drawGradientText(sf::RenderWindow& window, sf::Text& text, const sf::Color& gradientTop, const sf::Color& gradientBottom, sf::Shader& shader) {
     sf::String string = text.getString();
     float charHeight = text.getCharacterSize();
     sf::Vector2f position = text.getPosition();

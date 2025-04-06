@@ -3,6 +3,8 @@ Window 1280 720 60 0
 Shader Gradient         ../assets/shaders/gradient.frag
 
 Music Menu              ../assets/music/menu_music.mp3
+Sound Hover             ../assets/sound/Hover.mp3
+Sound Select            ../assets/sound/Select.mp3
 
 Font Bungee             ../assets/fonts/bungee.ttf
 Font Arial 		../assets/fonts/arial.ttf  
