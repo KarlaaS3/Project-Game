@@ -25,9 +25,16 @@ private:
     bool m_sceneChangePending{ false };
     bool m_applyTransition{ false }; 
     sf::Music m_backgroundMusic;
+    sf::Sprite m_animationSprite;
+	sf::Sprite m_Anim2;
+	sf::Sprite m_Anim3;
+    std::vector<Animation> m_coinAnimations;
+    sf::Color m_gradientTop;
+    sf::Color m_gradientBottom;
 
     void loadMenu();
     void init();
+    void drawGlowingText(sf::RenderWindow& window, sf::Text& text, const sf::Color& glowColor, float glowRadius);
     void onEnd() override;
 
 public:
