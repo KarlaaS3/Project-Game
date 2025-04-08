@@ -45,11 +45,13 @@ protected:
 	bool						m_drawCollision{false}; 
 	bool						m_drawGrid{false};
 	int                         collectedCoins{ 0 };
+	int                         m_playerArrows{ 10 };
 	int                         totalCoins{ 29 };
 	const Vec2					m_gridSize{ 50,50 };
 	sf::Text					m_gridText;
 	sf::Sprite                  m_backgroundSprite;
 	Animation m_coinAnimation; 
+	Animation m_arrowAnimation;
 	float m_ovalAnimationTime{ 0.0f };
 	sf::Shader m_glowShader;
 
@@ -81,6 +83,7 @@ public:
 	void drawCoinsCounter();
 	void drawWinScreen();
 	void drawLifeSpan();
+	void drawArrowsCounter();
 
 	void playerCheckState();
 	void respawnPlayer(std::shared_ptr<Entity> player);
@@ -100,6 +103,7 @@ public:
 	void meleeAttack(std::shared_ptr<Entity> enemy);
 	void rangedAttack(std::shared_ptr<Entity> enemy);
 	bool checkPlatformEdge(std::shared_ptr<Entity> enemy);
+	void spawnPowerUp(const Vec2& position, const std::string& type);
 
 };
 

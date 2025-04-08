@@ -23,6 +23,7 @@ void Scene_Play::init(const std::string& levelPath) {
 
     // Initialize the coin animation
     m_coinAnimation = m_game->assets().getAnimation("SmallCoin");
+    m_arrowAnimation = m_game->assets().getAnimation("Arrow");
 
     loadLevel(levelPath);
 }
@@ -138,8 +139,10 @@ void Scene_Play::sRender() {
         drawHP(e);
     }
 
-    drawCoinsCounter();
+
     drawLifeSpan();
+    drawCoinsCounter();
+	drawArrowsCounter();
 
     // Draw grid (optional debugging)
     if (m_drawGrid) {
@@ -290,6 +293,9 @@ void Scene_Play::sCollision() {
     auto bullets = m_entityManager.getEntities("bullet");
     auto enemyBullets = m_entityManager.getEntities("enemy_bullet");
     auto coins = m_entityManager.getEntities("coin");
+    auto powerUps = m_entityManager.getEntities("Bottle");
+    auto fruits = m_entityManager.getEntities("Fruit");
+
 
     for (auto p : players) {
         p->getComponent<CState>().unSet(CState::isGrounded); // not grounded
@@ -352,6 +358,29 @@ void Scene_Play::sCollision() {
             if (overlap.x > 0 && overlap.y > 0) {
                 c->destroy(); // Destroy the coin
                 collectedCoins++;
+            }
+        }
+
+        for (auto p : players) {
+            for (auto pu : powerUps) {
+                auto overlap = Physics::getOverlap(p, pu);
+                if (overlap.x > 0 && overlap.y > 0) {
+                    // Collect bottle (increase arrows)
+                    p->getComponent<CInput>().canShoot = true; // Allow shooting
+                    pu->destroy(); // Destroy the power-up
+                }
+            }
+
+            for (auto f : fruits) {
+                auto overlap = Physics::getOverlap(p, f);
+                if (overlap.x > 0 && overlap.y > 0) {
+                    // Collect fruit (increase life)
+                    auto& playerLifespan = p->getComponent<CLifespan>();
+                    if (playerLifespan.remaining < 5) {
+                        playerLifespan.remaining++;
+                    }
+                    f->destroy(); // Destroy the power-up
+                }
             }
         }
 
@@ -418,22 +447,58 @@ void Scene_Play::sCollision() {
             }
         }
 
+        for (auto p : players) {
+            for (auto pu : powerUps) {
+                auto overlap = Physics::getOverlap(p, pu);
+                if (overlap.x > 0 && overlap.y > 0) {
+                    // Collect bottle (increase arrows)
+                    m_playerArrows += 5; // Increase arrows by 5 (or any other value)
+                    pu->destroy(); // Destroy the power-up
+                }
+            }
+
+            for (auto f : fruits) {
+                auto overlap = Physics::getOverlap(p, f);
+                if (overlap.x > 0 && overlap.y > 0) {
+                    // Collect fruit (increase life)
+                    auto& playerLifespan = p->getComponent<CLifespan>();
+                    if (playerLifespan.remaining < 5) {
+                        playerLifespan.remaining++;
+                    }
+                    f->destroy(); // Destroy the power-up
+                }
+            }
+        }
+
         // Check collision with bullets
         for (auto b : bullets) {
-            auto overlap = Physics::getOverlap(e, b);
-            if (overlap.x > 0 && overlap.y > 0) {
-                auto& enemyHealth = e->getComponent<CHealth>();
-                enemyHealth.remaining -= 20; // Reduce health
-                if (enemyHealth.remaining <= 0) {
-                    e->destroy(); // Enemy dies
+            for (auto e : enemies) {
+                auto overlap = Physics::getOverlap(e, b);
+                if (overlap.x > 0 && overlap.y > 0) {
+                    auto& enemyHealth = e->getComponent<CHealth>();
+                    enemyHealth.remaining -= 20; // Reduce health
+                    if (enemyHealth.remaining <= 0) {
+                        // Enemy dies
+                        e->destroy();
+
+                        // Spawn power-ups
+                        Vec2 position = e->getComponent<CTransform>().pos;
+                        if (rand() % 2 == 0) {
+                            spawnPowerUp(position, "Bottle");
+                        }
+                        else {
+                            spawnPowerUp(position, "Fruit");
+                        }
+                    }
+                    else {
+                        e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Hurt");
+                    }
+                    b->destroy(); // Destroy the bullet
                 }
-                else {
-                    e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Hurt");
-                }
-                b->destroy(); // Destroy the bullet
             }
         }
     }
+        
 
     // Player collision with enemies
     for (auto p : players) {
@@ -591,17 +656,16 @@ void Scene_Play::drawCoinsCounter() {
     sf::Vector2f viewSize = m_game->window().getView().getSize();
 
     // Set the position relative to the view's center and lower the Y-coordinate by 20 pixels
-    coinText.setPosition(viewCenter.x - viewSize.x / 2 + 55, viewCenter.y - viewSize.y / 2 + 10);
+    coinText.setPosition(viewCenter.x - viewSize.x / 2 + 55, viewCenter.y - viewSize.y / 2 + 100);
 
     // Get the coin animation
     sf::Sprite coinSprite = m_coinAnimation.getSprite();
-    coinSprite.setPosition(viewCenter.x - viewSize.x / 2 + 30, viewCenter.y - viewSize.y / 2 + 30);
+    coinSprite.setPosition(viewCenter.x - viewSize.x / 2 + 30, viewCenter.y - viewSize.y / 2 + 120);
 
     // Draw the coin sprite and coin text
     m_game->window().draw(coinSprite);
     m_game->window().draw(coinText);
 }
-
 
 void Scene_Play::drawLifeSpan() {
     // Get the current view's center
@@ -623,11 +687,34 @@ void Scene_Play::drawLifeSpan() {
         else {
             heartSprite.setTexture(m_game->assets().getTexture("EmptyHeart"));
         }
-        heartSprite.setPosition(viewCenter.x - viewSize.x / 2 + 10 + i * heartSpacing, viewCenter.y - viewSize.y / 2 + 40);
+        heartSprite.setPosition(viewCenter.x - viewSize.x / 2 + 10 + i * heartSpacing, viewCenter.y - viewSize.y / 2 + 10);
         m_game->window().draw(heartSprite);
     }
 }
 
+void Scene_Play::drawArrowsCounter()
+{
+    sf::Text arrowText;
+    arrowText.setFont(m_game->assets().getFont("Bungee"));
+    arrowText.setString(std::to_string(m_playerArrows));
+    arrowText.setCharacterSize(30);
+    arrowText.setFillColor(sf::Color(255, 223, 63));
+
+    // Get the current view's center
+    sf::Vector2f viewCenter = m_game->window().getView().getCenter();
+    sf::Vector2f viewSize = m_game->window().getView().getSize();
+
+    // Set the position relative to the view's center and lower the Y-coordinate by 20 pixels
+    arrowText.setPosition(viewCenter.x - viewSize.x / 2 + 80, viewCenter.y - viewSize.y / 2 + 55);
+
+    // Get the arrow sprite from the assets
+    sf::Sprite arrowSprite = m_arrowAnimation.getSprite();
+    arrowSprite.setPosition(viewCenter.x - viewSize.x / 2 + 40, viewCenter.y - viewSize.y / 2 + 75);
+
+    // Draw the arrow sprite and the arrows counter
+    m_game->window().draw(arrowSprite);
+    m_game->window().draw(arrowText);
+}
 
 void Scene_Play::drawWinScreen()
 {
@@ -676,6 +763,8 @@ void Scene_Play::loadLevel(const std::string& path) {
 
     spawnPlayer();
 	spawnEnemy(m_enemyConfigs);
+    spawnPowerUp(Vec2(100, 100), "Bottle"); // Example position
+    spawnPowerUp(Vec2(200, 200), "Fruit");
 }
 
 void Scene_Play::loadFromFile(const std::string& path) {
@@ -749,6 +838,27 @@ void Scene_Play::loadFromFile(const std::string& path) {
             coin->addComponent<CTransform>(gridToMidPixel(gx, gy, coin));
             coin->addComponent<CBoundingBox>(Vec2(20, 20)); // Adjust the size as needed
         }
+		else if (token == "Arrow") {
+			float gx, gy;
+			confFile >> gx >> gy;
+			auto arrow = m_entityManager.addEntity("arrow");
+			arrow->addComponent<CAnimation>(m_game->assets().getAnimation("Arrow"), true);
+			arrow->addComponent<CTransform>(gridToMidPixel(gx, gy, arrow));
+		}
+		else if (token == "Bottle") {
+			float gx, gy;
+			confFile >> gx >> gy;
+			auto bottle = m_entityManager.addEntity("Bottle");
+			bottle->addComponent<CAnimation>(m_game->assets().getAnimation("Bottle"), true);
+			bottle->addComponent<CTransform>(gridToMidPixel(gx, gy, bottle));
+		}
+		else if (token == "Fruit") {
+			float gx, gy;
+			confFile >> gx >> gy;
+			auto fruit = m_entityManager.addEntity("Fruit");
+			fruit->addComponent<CAnimation>(m_game->assets().getAnimation("Fruit"), true);
+			fruit->addComponent<CTransform>(gridToMidPixel(gx, gy, fruit));
+		}
         else if (token == "#") {
             std::string tmp;
             std::getline(confFile, tmp);
@@ -774,27 +884,31 @@ void Scene_Play::spawnPlayer() {
 }
 
 void Scene_Play::spawnBullet(std::shared_ptr<Entity> e) {
-    auto tx = e->getComponent<CTransform>();
+    if (m_playerArrows > 0) { // Check if the player has arrows
+        auto tx = e->getComponent<CTransform>();
 
-    if (tx.has) {
-        auto bullet = m_entityManager.addEntity("bullet");
-        bullet->addComponent<CAnimation>(m_game->assets().getAnimation(m_playerConfig.WEAPON), true);
-        bullet->addComponent<CTransform>(tx.pos);
-        bullet->addComponent<CBoundingBox>(m_game->assets().getAnimation(m_playerConfig.WEAPON).getSize());
-        bullet->addComponent<CLifespan>(50);
+        if (tx.has) {
+            auto bullet = m_entityManager.addEntity("bullet");
+            bullet->addComponent<CAnimation>(m_game->assets().getAnimation(m_playerConfig.WEAPON), true);
+            bullet->addComponent<CTransform>(tx.pos);
+            bullet->addComponent<CBoundingBox>(m_game->assets().getAnimation(m_playerConfig.WEAPON).getSize());
+            bullet->addComponent<CLifespan>(10);
 
-        bool isFacingLeft = e->getComponent<CState>().test(CState::isFacingLeft);
-        std::cout << "Bullet facing left: " << isFacingLeft << std::endl;
+            bool isFacingLeft = e->getComponent<CState>().test(CState::isFacingLeft);
+            std::cout << "Bullet facing left: " << isFacingLeft << std::endl;
 
-        // Flip the animation
-        bullet->getComponent<CAnimation>().setFlipped(isFacingLeft);
+            // Flip the animation
+            bullet->getComponent<CAnimation>().setFlipped(isFacingLeft);
 
-        bullet->getComponent<CTransform>().vel.x = 10 * (isFacingLeft ? -1 : 1);
-        bullet->getComponent<CTransform>().vel.y = 0;
+            bullet->getComponent<CTransform>().vel.x = 10 * (isFacingLeft ? -1 : 1);
+            bullet->getComponent<CTransform>().vel.y = 0;
 
-        // Set the scale based on the velocity
-        if (std::abs(bullet->getComponent<CTransform>().vel.x) > 0.1f) {
-            bullet->getComponent<CTransform>().scale.x = (bullet->getComponent<CTransform>().vel.x > 0) ? 1 : -1;
+            // Set the scale based on the velocity
+            if (std::abs(bullet->getComponent<CTransform>().vel.x) > 0.1f) {
+                bullet->getComponent<CTransform>().scale.x = (bullet->getComponent<CTransform>().vel.x > 0) ? 1 : -1;
+            }
+
+            m_playerArrows--; // Decrease the number of arrows
         }
     }
 }
@@ -841,7 +955,6 @@ bool Scene_Play::checkPlatformEdge(std::shared_ptr<Entity> enemy) {
     return false;
 }
 
-
 void Scene_Play::checkWinCondition() {
     if (m_hasEnded) return;
 
@@ -884,8 +997,6 @@ void Scene_Play::checkLoseCondition() {
         }
     }
 }
-
-
 
 void Scene_Play::meleeAttack(std::shared_ptr<Entity> enemy) {
     // Implement melee attack logic
@@ -1001,5 +1112,12 @@ void Scene_Play::sEnemyBehavior() {
         transform.pos.x += transform.vel.x * m_game->deltaTime();
         transform.pos.y += transform.vel.y;
     }
+}
+
+void Scene_Play::spawnPowerUp(const Vec2& position, const std::string& type) {
+    auto powerUp = m_entityManager.addEntity(type);
+    powerUp->addComponent<CAnimation>(m_game->assets().getAnimation(type), true);
+    powerUp->addComponent<CTransform>(position);
+    powerUp->addComponent<CBoundingBox>(Vec2(20, 20)); // Adjust the size as needed
 }
 
