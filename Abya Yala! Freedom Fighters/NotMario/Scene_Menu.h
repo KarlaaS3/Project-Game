@@ -34,7 +34,6 @@ private:
 
     void loadMenu();
     void init();
-    void drawGlowingText(sf::RenderWindow& window, sf::Text& text, const sf::Color& glowColor, float glowRadius);
     void onEnd() override;
 
 public:

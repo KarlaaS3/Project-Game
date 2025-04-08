@@ -49,6 +49,10 @@ protected:
 	const Vec2					m_gridSize{ 50,50 };
 	sf::Text					m_gridText;
 	sf::Sprite                  m_backgroundSprite;
+	Animation m_coinAnimation; 
+	float m_ovalAnimationTime{ 0.0f };
+	sf::Shader m_glowShader;
+
 
 	void	init(const std::string& levelPath);
 	void	registerActions();

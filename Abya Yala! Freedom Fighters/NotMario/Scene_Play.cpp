@@ -21,9 +21,11 @@ void Scene_Play::init(const std::string& levelPath) {
     backgroundTexture.setRepeated(true);
     m_backgroundSprite.setTexture(backgroundTexture);
 
+    // Initialize the coin animation
+    m_coinAnimation = m_game->assets().getAnimation("SmallCoin");
+
     loadLevel(levelPath);
 }
-
 
 void Scene_Play::registerActions() {
     registerAction(sf::Keyboard::P, "PAUSE");
@@ -51,19 +53,26 @@ void Scene_Play::update() {
     if (m_hasEnded) return;
     m_entityManager.update();
 
+    // Increment the elapsed time for the oval animation
+    m_ovalAnimationTime += m_game->deltaTime();
+
+    // Update the coin animation
+    m_coinAnimation.update();
+
     // TODO pause function
 
     sMovement();
     sLifespan();
     sCollision();
     sAnimation();
-	sEnemyBehavior();
+    sEnemyBehavior();
 
     playerCheckState();
-	checkWinCondition();
-	//updateBackground();
-	checkLoseCondition();
+    checkWinCondition();
+    //updateBackground();
+    checkLoseCondition();
 }
+
 
 void Scene_Play::sRender() {
     // Background color (only visible if there's transparency)
@@ -192,8 +201,7 @@ void Scene_Play::sMovement() {
         pt.vel.y = -m_playerConfig.JUMP;
     }
 
-
-    // gravity
+    // gravity for player
     pt.vel.y += m_playerConfig.GRAVITY;
     pt.vel.x = pt.vel.x * m_playerConfig.SPEED;
 
@@ -203,14 +211,20 @@ void Scene_Play::sMovement() {
     if (pt.vel.x > 0.1)
         m_player->getComponent<CState>().unSet(CState::isFacingLeft);
 
-
     // move all entities
     for (auto e : m_entityManager.getEntities()) {
         auto& tx = e->getComponent<CTransform>();
         tx.prevPos = tx.pos;
         tx.pos += tx.vel;
     }
+
+    // apply gravity to enemies
+    for (auto e : m_entityManager.getEntities("enemy")) {
+        auto& tx = e->getComponent<CTransform>();
+        tx.vel.y += m_playerConfig.GRAVITY;
+    }
 }
+
 
 void Scene_Play::playerCheckState() {
     auto& tx = m_player->getComponent<CTransform>();
@@ -566,14 +580,54 @@ void Scene_Play::drawHP(std::shared_ptr<Entity> e) {
 
 void Scene_Play::drawCoinsCounter() {
     sf::Text coinText;
-    coinText.setFont(m_game->assets().getFont("Arial")); 
-    coinText.setString("Coins: " + std::to_string(collectedCoins));
-    coinText.setCharacterSize(20); 
-    coinText.setFillColor(sf::Color::Yellow);
-    coinText.setPosition(10, 10); 
+    coinText.setFont(m_game->assets().getFont("Bungee"));
+    coinText.setString(std::to_string(collectedCoins));
+    coinText.setCharacterSize(30);
+    coinText.setFillColor(sf::Color(255, 223, 63));
 
+
+    // Get the current view's center
+    sf::Vector2f viewCenter = m_game->window().getView().getCenter();
+    sf::Vector2f viewSize = m_game->window().getView().getSize();
+
+    // Set the position relative to the view's center and lower the Y-coordinate by 20 pixels
+    coinText.setPosition(viewCenter.x - viewSize.x / 2 + 55, viewCenter.y - viewSize.y / 2 + 10);
+
+    // Get the coin animation
+    sf::Sprite coinSprite = m_coinAnimation.getSprite();
+    coinSprite.setPosition(viewCenter.x - viewSize.x / 2 + 30, viewCenter.y - viewSize.y / 2 + 30);
+
+    // Draw the coin sprite and coin text
+    m_game->window().draw(coinSprite);
     m_game->window().draw(coinText);
 }
+
+
+void Scene_Play::drawLifeSpan() {
+    // Get the current view's center
+    sf::Vector2f viewCenter = m_game->window().getView().getCenter();
+    sf::Vector2f viewSize = m_game->window().getView().getSize();
+
+    // Draw hearts for health
+    int totalHealth = m_player->getComponent<CLifespan>().total;
+    int remainingHealth = m_player->getComponent<CLifespan>().remaining;
+
+    // Adjust the spacing between hearts
+    float heartSpacing = 40.0f; // Increase this value to add more space between hearts
+
+    for (int i = 0; i < totalHealth; ++i) {
+        sf::Sprite heartSprite;
+        if (i < remainingHealth) {
+            heartSprite.setTexture(m_game->assets().getTexture("Heart"));
+        }
+        else {
+            heartSprite.setTexture(m_game->assets().getTexture("EmptyHeart"));
+        }
+        heartSprite.setPosition(viewCenter.x - viewSize.x / 2 + 10 + i * heartSpacing, viewCenter.y - viewSize.y / 2 + 40);
+        m_game->window().draw(heartSprite);
+    }
+}
+
 
 void Scene_Play::drawWinScreen()
 {
@@ -595,17 +649,6 @@ void Scene_Play::drawWinScreen()
     m_game->window().draw(options);
 
     m_game->window().display();
-}
-
-void Scene_Play::drawLifeSpan()
-{
-	sf::Text lifeSpanText;
-	lifeSpanText.setFont(m_game->assets().getFont("Arial"));
-	lifeSpanText.setString("Life Span: " + std::to_string(m_player->getComponent<CLifespan>().remaining));
-    lifeSpanText.setCharacterSize(20);
-    lifeSpanText.setFillColor(sf::Color::White);
-	lifeSpanText.setPosition(10, 40);
-	m_game->window().draw(lifeSpanText);
 }
 
 void Scene_Play::sDebug() {
