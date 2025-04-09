@@ -74,7 +74,6 @@ void Scene_Play::update() {
     checkLoseCondition();
 }
 
-
 void Scene_Play::sRender() {
     // Background color (only visible if there's transparency)
     static const sf::Color background(100, 100, 255);
@@ -228,7 +227,6 @@ void Scene_Play::sMovement() {
     }
 }
 
-
 void Scene_Play::playerCheckState() {
     auto& tx = m_player->getComponent<CTransform>();
     auto& state = m_player->getComponent<CState>();
@@ -289,13 +287,11 @@ void Scene_Play::sCollision() {
     auto tiles = m_entityManager.getEntities("tile");
     auto ground = m_entityManager.getEntities("ground");
     auto enemies = m_entityManager.getEntities("enemy");
-    auto arrows = m_entityManager.getEntities("arrow");
     auto bullets = m_entityManager.getEntities("bullet");
     auto enemyBullets = m_entityManager.getEntities("enemy_bullet");
     auto coins = m_entityManager.getEntities("coin");
     auto powerUps = m_entityManager.getEntities("Bottle");
     auto fruits = m_entityManager.getEntities("Fruit");
-
 
     for (auto p : players) {
         p->getComponent<CState>().unSet(CState::isGrounded); // not grounded
@@ -361,26 +357,35 @@ void Scene_Play::sCollision() {
             }
         }
 
-        for (auto p : players) {
-            for (auto pu : powerUps) {
-                auto overlap = Physics::getOverlap(p, pu);
-                if (overlap.x > 0 && overlap.y > 0) {
-                    // Collect bottle (increase arrows)
-                    p->getComponent<CInput>().canShoot = true; // Allow shooting
-                    pu->destroy(); // Destroy the power-up
+        // Check collision with power-ups
+        for (auto pu : powerUps) {
+            auto overlap = Physics::getOverlap(p, pu);
+            if (overlap.x > 0 && overlap.y > 0) {
+                // Collect bottle (increase arrows)
+                p->getComponent<CInput>().canShoot = true; // Allow shooting
+                if (m_playerArrows + 3 > 7) {
+                    m_playerArrows = 7; // Set to max if it exceeds 10
                 }
+                else {
+                    m_playerArrows += 3; // Otherwise, add 3 arrows
+                }
+                pu->destroy(); // Destroy the power-up
+                std::cout << "Collected Bottle Power-Up. Arrows: " << m_playerArrows << std::endl;
             }
+        }
 
-            for (auto f : fruits) {
-                auto overlap = Physics::getOverlap(p, f);
-                if (overlap.x > 0 && overlap.y > 0) {
-                    // Collect fruit (increase life)
-                    auto& playerLifespan = p->getComponent<CLifespan>();
-                    if (playerLifespan.remaining < 5) {
-                        playerLifespan.remaining++;
-                    }
-                    f->destroy(); // Destroy the power-up
+        // Check collision with fruits
+        for (auto f : fruits) {
+            auto overlap = Physics::getOverlap(p, f);
+            if (overlap.x > 0 && overlap.y > 0) {
+                // Collect fruit (increase life)
+                auto& playerLifespan = p->getComponent<CLifespan>();
+                if (playerLifespan.total < 5) {
+                    playerLifespan.total++;
+                    playerLifespan.remaining++;
                 }
+                f->destroy(); // Destroy the power-up
+                std::cout << "Collected Fruit Power-Up. Lifespan: " << playerLifespan.remaining << std::endl;
             }
         }
 
@@ -447,29 +452,6 @@ void Scene_Play::sCollision() {
             }
         }
 
-        for (auto p : players) {
-            for (auto pu : powerUps) {
-                auto overlap = Physics::getOverlap(p, pu);
-                if (overlap.x > 0 && overlap.y > 0) {
-                    // Collect bottle (increase arrows)
-                    m_playerArrows += 5; // Increase arrows by 5 (or any other value)
-                    pu->destroy(); // Destroy the power-up
-                }
-            }
-
-            for (auto f : fruits) {
-                auto overlap = Physics::getOverlap(p, f);
-                if (overlap.x > 0 && overlap.y > 0) {
-                    // Collect fruit (increase life)
-                    auto& playerLifespan = p->getComponent<CLifespan>();
-                    if (playerLifespan.remaining < 5) {
-                        playerLifespan.remaining++;
-                    }
-                    f->destroy(); // Destroy the power-up
-                }
-            }
-        }
-
         // Check collision with bullets
         for (auto b : bullets) {
             for (auto e : enemies) {
@@ -481,13 +463,15 @@ void Scene_Play::sCollision() {
                         // Enemy dies
                         e->destroy();
 
-                        // Spawn power-ups
-                        Vec2 position = e->getComponent<CTransform>().pos;
-                        if (rand() % 2 == 0) {
-                            spawnPowerUp(position, "Bottle");
-                        }
-                        else {
-                            spawnPowerUp(position, "Fruit");
+                        // Spawn power-ups with a probability check
+                        if (static_cast<float>(rand()) / RAND_MAX < POWER_UP_DROP_PROBABILITY) {
+                            Vec2 position = e->getComponent<CTransform>().pos;
+                            if (rand() % 2 == 0) {
+                                spawnPowerUp(position, "Bottle");
+                            }
+                            else {
+                                spawnPowerUp(position, "Fruit");
+                            }
                         }
                     }
                     else {
@@ -498,7 +482,6 @@ void Scene_Play::sCollision() {
             }
         }
     }
-        
 
     // Player collision with enemies
     for (auto p : players) {
@@ -516,28 +499,6 @@ void Scene_Play::sCollision() {
                     p->getComponent<CTransform>().vel.y = 5.f;
                     p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("PlayerHurt");
                 }
-            }
-        }
-    }
-
-    // Enemy hit by an arrow
-    for (auto e : enemies) {
-        for (auto a : arrows) {
-            auto overlap = Physics::getOverlap(e, a);
-            if (overlap.x > 0 && overlap.y > 0) {
-                auto& enemyHealth = e->getComponent<CHealth>();
-                enemyHealth.remaining--; // Reduce health
-                if (enemyHealth.remaining <= 0) {
-                    e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Death");
-                    e->destroy(); // Enemy dies
-                    onEnd(); // Call game over function
-                }
-                else {
-                    e->getComponent<CState>().unSet(CState::isGrounded);
-                    e->getComponent<CTransform>().vel.y = 5.f; // Make the enemy fall
-                    e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Hurt");
-                }
-                a->destroy(); // Destroy the arrow
             }
         }
     }
@@ -763,8 +724,11 @@ void Scene_Play::loadLevel(const std::string& path) {
 
     spawnPlayer();
 	spawnEnemy(m_enemyConfigs);
-    spawnPowerUp(Vec2(100, 100), "Bottle"); // Example position
-    spawnPowerUp(Vec2(200, 200), "Fruit");
+    spawnPowerUp(Vec2(120, 100), "Bottle"); // Example position
+    spawnPowerUp(Vec2(320, 300), "Fruit");
+
+    Vec2 doorPosition = Vec2(3000, 100); // Adjust the position as needed
+    spawnDoor(doorPosition);
 }
 
 void Scene_Play::loadFromFile(const std::string& path) {
@@ -891,8 +855,11 @@ void Scene_Play::spawnBullet(std::shared_ptr<Entity> e) {
             auto bullet = m_entityManager.addEntity("bullet");
             bullet->addComponent<CAnimation>(m_game->assets().getAnimation(m_playerConfig.WEAPON), true);
             bullet->addComponent<CTransform>(tx.pos);
-            bullet->addComponent<CBoundingBox>(m_game->assets().getAnimation(m_playerConfig.WEAPON).getSize());
-            bullet->addComponent<CLifespan>(10);
+
+            // Set a smaller bounding box for the arrow
+            Vec2 arrowSize = m_game->assets().getAnimation(m_playerConfig.WEAPON).getSize();
+            Vec2 smallerSize = Vec2(arrowSize.x * 0.5f, arrowSize.y * 0.5f); // Adjust the size as needed
+            bullet->addComponent<CBoundingBox>(smallerSize);
 
             bool isFacingLeft = e->getComponent<CState>().test(CState::isFacingLeft);
             std::cout << "Bullet facing left: " << isFacingLeft << std::endl;
@@ -900,7 +867,8 @@ void Scene_Play::spawnBullet(std::shared_ptr<Entity> e) {
             // Flip the animation
             bullet->getComponent<CAnimation>().setFlipped(isFacingLeft);
 
-            bullet->getComponent<CTransform>().vel.x = 10 * (isFacingLeft ? -1 : 1);
+            // Increase the velocity of the arrow
+            bullet->getComponent<CTransform>().vel.x = 15 * (isFacingLeft ? -1 : 1); // Increase velocity to 15 (or any other value)
             bullet->getComponent<CTransform>().vel.y = 0;
 
             // Set the scale based on the velocity
@@ -908,31 +876,11 @@ void Scene_Play::spawnBullet(std::shared_ptr<Entity> e) {
                 bullet->getComponent<CTransform>().scale.x = (bullet->getComponent<CTransform>().vel.x > 0) ? 1 : -1;
             }
 
+            // Add a lifespan component to limit the range of the bullet
+            bullet->addComponent<CLifespan>(15); // Adjust the lifespan value as needed
+
             m_playerArrows--; // Decrease the number of arrows
         }
-    }
-}
-
-void Scene_Play::spawnEnemy(const std::vector<EnemyConfig>& configs) {
-    for (const auto& config : configs) {
-        auto enemy = m_entityManager.addEntity("enemy");
-        enemy->addComponent<CAnimation>(m_game->assets().getAnimation("Enemy"), true);
-        enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
-        enemy->addComponent<CState>();
-        enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
-        enemy->addComponent<CHealth>(100);
-        enemy->addComponent<CAttackTimer>(2.0f);
-
-        Vec2 pos = gridToMidPixel(config.X, config.Y, enemy);
-        std::cout << "Converted position: " << pos.x << ", " << pos.y << std::endl;
-        enemy->addComponent<CTransform>(pos);
-
-        auto& transform = enemy->getComponent<CTransform>();
-        transform.vel.x = config.SPEED;
-        transform.vel.y = config.GRAVITY;
-
-        std::cout << "Spawned enemy at: " << config.X << ", " << config.Y
-            << " with weapon: " << config.WEAPON << std::endl;
     }
 }
 
@@ -975,6 +923,39 @@ void Scene_Play::checkWinCondition() {
     }
 }
 
+void Scene_Play::spawnEnemy(const std::vector<EnemyConfig>& configs) {
+    for (const auto& config : configs) {
+        auto enemy = m_entityManager.addEntity("enemy");
+        enemy->addComponent<CAnimation>(m_game->assets().getAnimation("Enemy"), true);
+        enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
+        enemy->addComponent<CState>();
+        enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
+        enemy->addComponent<CHealth>(100);
+        enemy->addComponent<CAttackTimer>(2.0f);
+
+        Vec2 pos = gridToMidPixel(config.X, config.Y, enemy);
+        std::cout << "Converted position: " << pos.x << ", " << pos.y << std::endl;
+        enemy->addComponent<CTransform>(pos);
+
+        auto& transform = enemy->getComponent<CTransform>();
+        transform.vel.x = config.SPEED;
+        transform.vel.y = config.GRAVITY;
+
+        std::cout << "Spawned enemy at: " << config.X << ", " << config.Y
+            << " with weapon: " << config.WEAPON << std::endl;
+
+        // Store the respawn point for the enemy
+        m_enemyRespawnPoints[enemy] = pos;
+    }
+}
+
+void Scene_Play::respawnEnemy(std::shared_ptr<Entity> enemy) {
+    auto& transform = enemy->getComponent<CTransform>();
+    transform.pos = m_enemyRespawnPoints[enemy];
+    transform.vel = Vec2(0.f, 0.f);
+    std::cout << "Respawned enemy at: " << transform.pos.x << ", " << transform.pos.y << std::endl;
+}
+
 void Scene_Play::checkLoseCondition() {
     if (m_hasEnded) return;
 
@@ -994,6 +975,16 @@ void Scene_Play::checkLoseCondition() {
             else {
                 respawnPlayer(player);
             }
+        }
+    }
+
+    auto enemies = m_entityManager.getEntities("enemy");
+    for (auto& enemy : enemies) {
+        auto& enemyTransform = enemy->getComponent<CTransform>();
+
+        // Check if the enemy has fallen off the screen
+        if (enemyTransform.pos.y > m_game->window().getSize().y) {
+            respawnEnemy(enemy);
         }
     }
 }
@@ -1119,5 +1110,26 @@ void Scene_Play::spawnPowerUp(const Vec2& position, const std::string& type) {
     powerUp->addComponent<CAnimation>(m_game->assets().getAnimation(type), true);
     powerUp->addComponent<CTransform>(position);
     powerUp->addComponent<CBoundingBox>(Vec2(20, 20)); // Adjust the size as needed
+    std::cout << "Spawned Power-Up: " << type << " at position: " << position.x << ", " << position.y << std::endl;
 }
+
+void Scene_Play::spawnKey(const Vec2& position)
+{
+	auto key = m_entityManager.addEntity("key");
+	key->addComponent<CAnimation>(m_game->assets().getAnimation("Key"), true);
+	key->addComponent<CTransform>(position);
+	key->addComponent<CBoundingBox>(Vec2(20, 20)); // Adjust the size as needed
+	std::cout << "Spawned Key at position: " << position.x << ", " << position.y << std::endl;
+}
+
+void Scene_Play::spawnDoor(const Vec2& position)
+{
+	auto door = m_entityManager.addEntity("door");
+	door->addComponent<CAnimation>(m_game->assets().getAnimation("Door"), true);
+	door->addComponent<CTransform>(position);
+	door->addComponent<CBoundingBox>(Vec2(20, 20)); // Adjust the size as needed
+	std::cout << "Spawned Door at position: " << position.x << ", " << position.y << std::endl;
+
+}
+
 

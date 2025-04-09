@@ -37,6 +37,8 @@ Texture Anim2           ../assets/mario/Anim2.png
 Texture Anim3           ../assets/mario/Anim3.png
 Texture TexFruit        ../assets/misc/drink.png
 Texture TexBottle       ../assets/misc/potions.png
+Texture TexDoor         ../assets/door/door23.jpeg
+Texture TexKey          ../assets/misc/key1.png
 
 Animation Stand 		TexStand 	6 	5 
 Animation Enemy                 TexEnemy        8       5               
@@ -53,3 +55,5 @@ Animation Death                 TexDeath        4       5
 Animation PlayerHurt            TexPlayerHurt   4       5
 Animation Bottle                TexBottle       10      5
 Animation Fruit                 TexFruit        11      5
+Animation Door                  TexDoor         1       1
+Animation Key     		TexKey	1	1
