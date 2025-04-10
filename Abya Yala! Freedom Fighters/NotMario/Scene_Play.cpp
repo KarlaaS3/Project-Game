@@ -119,15 +119,13 @@ void Scene_Play::sRender() {
 
     // Ensure the door's animation is set based on its state
     if (m_doorOpened) {
-        for (auto d : m_entityManager.getEntities("door")) {
-            d->getComponent<CAnimation>().animation = m_game->assets().getAnimation("DoorOpen");
-        }
+        m_door->getComponent<CAnimation>().animation = m_game->assets().getAnimation("DoorTotalOpen");
     }
 
-    // Draw all entities
+    // Draw all entities except the player
     if (m_drawTextures) {
         for (auto e : m_entityManager.getEntities()) {
-            if (e->hasComponent<CAnimation>()) {
+            if (e != m_player && e->hasComponent<CAnimation>()) {
                 auto& transform = e->getComponent<CTransform>();
                 auto& animation = e->getComponent<CAnimation>().animation;
                 animation.getSprite().setRotation(transform.angle);
@@ -138,12 +136,30 @@ void Scene_Play::sRender() {
         }
     }
 
+    // Draw the player last to ensure it is in front
+    if (m_drawTextures && m_player->hasComponent<CAnimation>()) {
+        auto& transform = m_player->getComponent<CTransform>();
+        auto& animation = m_player->getComponent<CAnimation>().animation;
+        animation.getSprite().setRotation(transform.angle);
+        animation.getSprite().setPosition(transform.pos.x, transform.pos.y);
+        animation.getSprite().setScale(transform.scale.x, transform.scale.y);
+        m_game->window().draw(animation.getSprite());
+    }
+
     // Draw collision boxes (debugging)
     if (m_drawCollision) {
         for (auto e : m_entityManager.getEntities()) {
             if (e->hasComponent<CBoundingBox>()) {
                 auto& box = e->getComponent<CBoundingBox>();
                 auto& transform = e->getComponent<CTransform>();
+                sf::RectangleShape rect;
+                rect.setSize(sf::Vector2f(box.size.x, box.size.y));
+                rect.setOrigin(box.size.x / 2.f, box.size.y / 2.f);
+                rect.setPosition(transform.pos.x, transform.pos.y);
+                rect.setFillColor(sf::Color(0, 0, 0, 0));
+                rect.setOutlineColor(sf::Color(255, 0, 0));
+                rect.setOutlineThickness(1.f);
+                m_game->window().draw(rect);
             }
         }
     }
@@ -153,14 +169,13 @@ void Scene_Play::sRender() {
         drawHP(e);
     }
 
-	for (auto e : m_entityManager.getEntities("stronger_enemy")) {
-		drawHP(e);
-	}
-
+    for (auto e : m_entityManager.getEntities("stronger_enemy")) {
+        drawHP(e);
+    }
 
     drawLifeSpan();
     drawCoinsCounter();
-	drawArrowsCounter();
+    drawArrowsCounter();
 
     // Draw grid (optional debugging)
     if (m_drawGrid) {
@@ -390,6 +405,7 @@ void Scene_Play::sCollision() {
             auto overlap = Physics::getOverlap(p, b);
             if (overlap.x > 0 && overlap.y > 0) {
                 m_hasBook = true; // Player has the book
+                m_door->getComponent<CAnimation>().animation = m_game->assets().getAnimation("DoorOpen");
                 b->destroy(); // Destroy the book
                 std::cout << "Collected Book." << std::endl;
             }
@@ -405,40 +421,22 @@ void Scene_Play::sCollision() {
             }
         }
 
-        // Check collision with the chest
-        for (auto c : m_entityManager.getEntities("chest")) {
-            auto overlap = Physics::getOverlap(p, c);
+        // Check collision with the door
+        for (auto d : m_entityManager.getEntities("door")) {
+            auto overlap = Physics::getOverlap(p, d);
             if (overlap.x > 0 && overlap.y > 0) {
-                m_chest = c; // Store the chest entity
-                if (m_chestOpened) {
-                    // Display message if the chest is already opened
-                    c->getComponent<CAnimation>().animation = m_game->assets().getAnimation("ChestOpen");
-                    sf::Text message;
-                    message.setFont(m_game->assets().getFont("Arial"));
-                    message.setCharacterSize(30);
-                    message.setFillColor(sf::Color::White);
-                    message.setString("This chest is already opened.");
-                    message.setPosition(m_game->window().getSize().x / 2 - 200, m_game->window().getSize().y / 2 - 50);
-                    m_game->window().draw(message);
-                    m_game->window().display();
-                    std::cout << "This chest is already opened." << std::endl;
-                }
+				m_door = d; // Store the door entity
+				if (m_hasBook) {
+					// Display message if the door is already opened
+					d->getComponent<CAnimation>().animation = m_game->assets().getAnimation("DoorTotalOpen");
+					std::cout << "This door is already opened." << std::endl;
+				}
                 else {
-                    // Display message if the player interacts with the chest
-                    sf::Text message;
-                    message.setFont(m_game->assets().getFont("Arial"));
-                    message.setCharacterSize(30);
-                    message.setFillColor(sf::Color::White);
-                    message.setString("Press 'F' to open the chest.");
-                    message.setPosition(m_game->window().getSize().x / 2 - 200, m_game->window().getSize().y / 2 - 50);
-                    m_game->window().draw(message);
-                    m_game->window().display();
-                    std::cout << "Press 'F' to open the chest." << std::endl;
+                    std::cout << "You need a key to open this door." << std::endl;
                 }
             }
         }
 
-
         // Check collision with the chest
         for (auto c : m_entityManager.getEntities("chest")) {
             auto overlap = Physics::getOverlap(p, c);
@@ -447,26 +445,9 @@ void Scene_Play::sCollision() {
                 if (m_chestOpened) {
                     // Display message if the chest is already opened
                     c->getComponent<CAnimation>().animation = m_game->assets().getAnimation("ChestOpen");
-                    sf::Text message;
-                    message.setFont(m_game->assets().getFont("Arial"));
-                    message.setCharacterSize(30);
-                    message.setFillColor(sf::Color::White);
-                    message.setString("This chest is already opened.");
-                    message.setPosition(m_game->window().getSize().x / 2 - 200, m_game->window().getSize().y / 2 - 50);
-                    m_game->window().draw(message);
-                    m_game->window().display();
                     std::cout << "This chest is already opened." << std::endl;
                 }
-                else {
-                    // Display message if the player interacts with the chest
-                    sf::Text message;
-                    message.setFont(m_game->assets().getFont("Arial"));
-                    message.setCharacterSize(30);
-                    message.setFillColor(sf::Color::White);
-                    message.setString("Press 'F' to open the chest.");
-                    message.setPosition(m_game->window().getSize().x / 2 - 200, m_game->window().getSize().y / 2 - 50);
-                    m_game->window().draw(message);
-                    m_game->window().display();
+                else {                  
                     std::cout << "Press 'F' to open the chest." << std::endl;
                 }
             }
@@ -757,21 +738,10 @@ void Scene_Play::sDoAction(const Action& action) {
                 std::cout << "Opened Chest and Collected Book." << std::endl;
             }
             else if (m_hasBook) {
-                // Display the message
-                sf::Text message;
-                message.setFont(m_game->assets().getFont("Arial"));
-                message.setCharacterSize(30);
-                message.setFillColor(sf::Color::White);
-                message.setString("You have saved your language and culture.\nNow collect all the gold and go to the next level through the door.");
-                message.setPosition(m_game->window().getSize().x / 2 - 200, m_game->window().getSize().y / 2 - 50);
-                m_game->window().draw(message);
-                m_game->window().display();
-
                 // Open the door
-                if (collectedCoins >= totalCoins) {
-                    m_door->destroy();
-                    std::cout << "Door opened." << std::endl;
-                }
+                m_doorOpened = true; // Set the door as opened
+                m_door->getComponent<CAnimation>().animation = m_game->assets().getAnimation("DoorTotalOpen"); // Change door animation to open
+                std::cout << "Door opened." << std::endl;
             }
         }
     }
@@ -1387,14 +1357,12 @@ void Scene_Play::spawnKey(const Vec2& position)
 	std::cout << "Spawned Key at position: " << position.x << ", " << position.y << std::endl;
 }
 
-void Scene_Play::spawnDoor(const Vec2& position)
-{
-	auto door = m_entityManager.addEntity("door");
-	door->addComponent<CAnimation>(m_game->assets().getAnimation("DoorClose"), true);
-	door->addComponent<CTransform>(position);
-	door->addComponent<CBoundingBox>(Vec2(20, 20)); // Adjust the size as needed
-	std::cout << "Spawned Door at position: " << position.x << ", " << position.y << std::endl;
-
+void Scene_Play::spawnDoor(const Vec2& position) {
+    m_door = m_entityManager.addEntity("door");
+    m_door->addComponent<CAnimation>(m_game->assets().getAnimation("DoorClose"), true);
+    m_door->addComponent<CTransform>(position);
+    m_door->addComponent<CBoundingBox>(Vec2(100, 100)); // Adjust the size as needed
+    std::cout << "Spawned Door at position: " << position.x << ", " << position.y << std::endl;
 }
 
 void Scene_Play::spawnStrongerEnemy(const std::vector<EnemyConfig>& configs) {

@@ -37,14 +37,16 @@ Texture Anim2           ../assets/mario/Anim2.png
 Texture Anim3           ../assets/mario/Anim3.png
 Texture TexFruit        ../assets/misc/drink.png
 Texture TexBottle       ../assets/misc/potions.png
-Texture TexDoor         ../assets/door/Door_Open.png
+Texture TexDoor         ../assets/door/DoorOpen.png
 Texture TexKey          ../assets/misc/key1.png
 Texture TexBook         ../assets/misc/book.png
 Texture OpenChest       ../assets/misc/OpenChest.png
 Texture CloseChest      ../assets/misc/chest1.png
 Texture TexArcher       ../assets/mario/characters/ArcherAttack2.png    
 Texture TexArcherH      ../assets/mario/characters/ArcherHurt.png   
-Texture TexCloseDoor    ../assets/door/DoorOpen1.png
+Texture TexCloseDoor    ../assets/door/DoorClose.png
+Texture TexDoor1        ../assets/door/DoorOpen1.png
+
 
 
 Animation Stand 		TexStand 	6 	5 
@@ -63,10 +65,11 @@ Animation Death                 TexDeath        4       5
 Animation PlayerHurt            TexPlayerHurt   4       2
 Animation Bottle                TexBottle       10      5
 Animation Fruit                 TexFruit        11      5
-Animation DoorOpen              TexDoor         5       10
+Animation DoorOpen              TexDoor         5       5
 Animation Key     		TexKey  	1	1
 Animation Book                  TexBook         10      5
 Animation ChestOpen             OpenChest       1       1
 Animation ChestClose            CloseChest      1       1
 Animation ArcherHurt            TexArcherH      4       2
 Animation DoorClose             TexCloseDoor    1       1
+Animation DoorTotalOpen         TexDoor1        1       1
