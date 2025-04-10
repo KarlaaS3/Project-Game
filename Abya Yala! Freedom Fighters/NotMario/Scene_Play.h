@@ -38,18 +38,25 @@ protected:
 	std::shared_ptr<Entity>		m_player;
 	std::shared_ptr<Entity>		m_key;
 	std::shared_ptr<Entity>		m_door;
+	std::shared_ptr<Entity>		m_chest;
+	std::shared_ptr<Entity>		m_book;
 	std::string					m_levelPath;
 	PlayerConfig				m_playerConfig;
-	std::vector<EnemyConfig> m_enemyConfigs;
+	std::vector<EnemyConfig>    m_enemyConfigs;
 	EnemyConfig					m_enemyConfig;
+	EnemyConfig					m_strongerEnemyConfig;
+	std::vector<EnemyConfig>    m_strongerEnemyConfigs;
 	std::priority_queue<SpawnPoint>     _spawnPoints;
 	bool						m_drawTextures{true};						
 	bool						m_drawCollision{true}; 
 	bool						m_drawGrid{false};
 	int                         collectedCoins{ 0 };
-	int                         m_playerArrows{ 5 };
+	int                         m_playerArrows{ 10 };
 	int                         totalCoins{ 29 };
 	bool						m_hasKey{ false };
+	bool                        m_hasBook{ false };
+	bool                        m_chestOpened{ false };
+	bool                        m_doorOpened{ false };
 	const Vec2					m_gridSize{ 50,50 };
 	sf::Text					m_gridText;
 	sf::Sprite                  m_backgroundSprite;
@@ -103,6 +110,7 @@ public:
 
 	void spawnEnemy(const std::vector<EnemyConfig>& configs);
 	void sEnemyBehavior();
+	void sStrongerEnemyBehavior();
 	void checkWinCondition();
 	void checkLoseCondition();
 
@@ -112,6 +120,9 @@ public:
 	void spawnPowerUp(const Vec2& position, const std::string& type);
 	void spawnKey(const Vec2& position);
 	void spawnDoor(const Vec2& position);
+	void spawnStrongerEnemy(const std::vector<EnemyConfig>& configs);
+	void spawnChest(const Vec2& position);
+	void spawnBook(const Vec2& position);
 
 };
 

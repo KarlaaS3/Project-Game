@@ -45,9 +45,11 @@ void Scene_Play::registerActions() {
 
     registerAction(sf::Keyboard::Space, "SHOOT");
 
-    registerAction(sf::Keyboard::Num1, "LEVEL2"); 
-    registerAction(sf::Keyboard::Num2, "MENU");    
+    registerAction(sf::Keyboard::Num1, "LEVEL2");
+    registerAction(sf::Keyboard::Num2, "MENU");
     registerAction(sf::Keyboard::Num3, "RESTART");
+
+    registerAction(sf::Keyboard::F, "INTERACT"); 
 }
 
 void Scene_Play::update() {
@@ -67,6 +69,7 @@ void Scene_Play::update() {
     sCollision();
     sAnimation();
     sEnemyBehavior();
+    sStrongerEnemyBehavior();
 
     playerCheckState();
     checkWinCondition();
@@ -109,6 +112,18 @@ void Scene_Play::sRender() {
         return;
     }
 
+    // Ensure the chest's animation is set based on its state
+    if (m_chestOpened) {
+        m_chest->getComponent<CAnimation>().animation = m_game->assets().getAnimation("ChestOpen");
+    }
+
+    // Ensure the door's animation is set based on its state
+    if (m_doorOpened) {
+        for (auto d : m_entityManager.getEntities("door")) {
+            d->getComponent<CAnimation>().animation = m_game->assets().getAnimation("DoorOpen");
+        }
+    }
+
     // Draw all entities
     if (m_drawTextures) {
         for (auto e : m_entityManager.getEntities()) {
@@ -137,6 +152,10 @@ void Scene_Play::sRender() {
     for (auto e : m_entityManager.getEntities("enemy")) {
         drawHP(e);
     }
+
+	for (auto e : m_entityManager.getEntities("stronger_enemy")) {
+		drawHP(e);
+	}
 
 
     drawLifeSpan();
@@ -225,6 +244,14 @@ void Scene_Play::sMovement() {
         auto& tx = e->getComponent<CTransform>();
         tx.vel.y += m_playerConfig.GRAVITY;
     }
+
+	// apply gravity to stronger enemies
+	for (auto e : m_entityManager.getEntities("stronger_enemy")) {
+		auto& tx = e->getComponent<CTransform>();
+		tx.vel.y += m_playerConfig.GRAVITY;
+	}
+
+
 }
 
 void Scene_Play::playerCheckState() {
@@ -287,6 +314,7 @@ void Scene_Play::sCollision() {
     auto tiles = m_entityManager.getEntities("tile");
     auto ground = m_entityManager.getEntities("ground");
     auto enemies = m_entityManager.getEntities("enemy");
+    auto strongerEnemies = m_entityManager.getEntities("stronger_enemy");
     auto bullets = m_entityManager.getEntities("bullet");
     auto enemyBullets = m_entityManager.getEntities("enemy_bullet");
     auto coins = m_entityManager.getEntities("coin");
@@ -354,6 +382,93 @@ void Scene_Play::sCollision() {
             if (overlap.x > 0 && overlap.y > 0) {
                 c->destroy(); // Destroy the coin
                 collectedCoins++;
+            }
+        }
+
+        // Check collision with the book
+        for (auto b : m_entityManager.getEntities("book")) {
+            auto overlap = Physics::getOverlap(p, b);
+            if (overlap.x > 0 && overlap.y > 0) {
+                m_hasBook = true; // Player has the book
+                b->destroy(); // Destroy the book
+                std::cout << "Collected Book." << std::endl;
+            }
+        }
+
+        // Check collision with the key
+        for (auto k : m_entityManager.getEntities("key")) {
+            auto overlap = Physics::getOverlap(p, k);
+            if (overlap.x > 0 && overlap.y > 0) {
+                m_hasKey = true; // Player has the key
+                k->destroy(); // Destroy the key
+                std::cout << "Collected Key." << std::endl;
+            }
+        }
+
+        // Check collision with the chest
+        for (auto c : m_entityManager.getEntities("chest")) {
+            auto overlap = Physics::getOverlap(p, c);
+            if (overlap.x > 0 && overlap.y > 0) {
+                m_chest = c; // Store the chest entity
+                if (m_chestOpened) {
+                    // Display message if the chest is already opened
+                    c->getComponent<CAnimation>().animation = m_game->assets().getAnimation("ChestOpen");
+                    sf::Text message;
+                    message.setFont(m_game->assets().getFont("Arial"));
+                    message.setCharacterSize(30);
+                    message.setFillColor(sf::Color::White);
+                    message.setString("This chest is already opened.");
+                    message.setPosition(m_game->window().getSize().x / 2 - 200, m_game->window().getSize().y / 2 - 50);
+                    m_game->window().draw(message);
+                    m_game->window().display();
+                    std::cout << "This chest is already opened." << std::endl;
+                }
+                else {
+                    // Display message if the player interacts with the chest
+                    sf::Text message;
+                    message.setFont(m_game->assets().getFont("Arial"));
+                    message.setCharacterSize(30);
+                    message.setFillColor(sf::Color::White);
+                    message.setString("Press 'F' to open the chest.");
+                    message.setPosition(m_game->window().getSize().x / 2 - 200, m_game->window().getSize().y / 2 - 50);
+                    m_game->window().draw(message);
+                    m_game->window().display();
+                    std::cout << "Press 'F' to open the chest." << std::endl;
+                }
+            }
+        }
+
+
+        // Check collision with the chest
+        for (auto c : m_entityManager.getEntities("chest")) {
+            auto overlap = Physics::getOverlap(p, c);
+            if (overlap.x > 0 && overlap.y > 0) {
+                m_chest = c; // Store the chest entity
+                if (m_chestOpened) {
+                    // Display message if the chest is already opened
+                    c->getComponent<CAnimation>().animation = m_game->assets().getAnimation("ChestOpen");
+                    sf::Text message;
+                    message.setFont(m_game->assets().getFont("Arial"));
+                    message.setCharacterSize(30);
+                    message.setFillColor(sf::Color::White);
+                    message.setString("This chest is already opened.");
+                    message.setPosition(m_game->window().getSize().x / 2 - 200, m_game->window().getSize().y / 2 - 50);
+                    m_game->window().draw(message);
+                    m_game->window().display();
+                    std::cout << "This chest is already opened." << std::endl;
+                }
+                else {
+                    // Display message if the player interacts with the chest
+                    sf::Text message;
+                    message.setFont(m_game->assets().getFont("Arial"));
+                    message.setCharacterSize(30);
+                    message.setFillColor(sf::Color::White);
+                    message.setString("Press 'F' to open the chest.");
+                    message.setPosition(m_game->window().getSize().x / 2 - 200, m_game->window().getSize().y / 2 - 50);
+                    m_game->window().draw(message);
+                    m_game->window().display();
+                    std::cout << "Press 'F' to open the chest." << std::endl;
+                }
             }
         }
 
@@ -483,6 +598,75 @@ void Scene_Play::sCollision() {
         }
     }
 
+    // Check collision with stronger enemies
+    for (auto e : strongerEnemies) {
+        e->getComponent<CState>().unSet(CState::isGrounded);
+        for (auto t : tiles) {
+            auto overlap = Physics::getOverlap(e, t);
+            if (overlap.x > 0 && overlap.y > 0) {
+                auto prevOverlap = Physics::getPreviousOverlap(e, t);
+                auto& etx = e->getComponent<CTransform>();
+                auto ttx = t->getComponent<CTransform>();
+
+                if (prevOverlap.x > 0) {
+                    if (etx.prevPos.y < ttx.prevPos.y) {
+                        etx.pos.y -= overlap.y;
+                        e->getComponent<CState>().set(CState::isGrounded);
+                    }
+                    else {
+                        etx.pos.y += overlap.y;
+                    }
+                    etx.vel.y = 0.f;
+                }
+            }
+        }
+
+        // Check collision with the ground
+        for (auto g : ground) {
+            auto overlap = Physics::getOverlap(e, g);
+            if (overlap.x > 0 && overlap.y > 0) {
+                auto prevOverlap = Physics::getPreviousOverlap(e, g);
+                auto& etx = e->getComponent<CTransform>();
+                auto& gtx = g->getComponent<CTransform>();
+
+                if (prevOverlap.x > 0) {
+                    if (etx.prevPos.y < gtx.prevPos.y) {
+                        etx.pos.y -= overlap.y;
+                        e->getComponent<CState>().set(CState::isGrounded);
+                    }
+                    else {
+                        etx.pos.y += overlap.y;
+                    }
+                    etx.vel.y = 0.f;
+                }
+            }
+        }
+
+        // Check collision with bullets
+        for (auto b : bullets) {
+            auto overlap = Physics::getOverlap(e, b);
+            if (overlap.x > 0 && overlap.y > 0) {
+                auto& enemyHealth = e->getComponent<CHealth>();
+                enemyHealth.remaining -= 20; // Reduce health
+                if (enemyHealth.remaining <= 0) {
+                    // Capture the position before destroying the enemy
+                    Vec2 position = e->getComponent<CTransform>().pos;
+
+                    // Stronger enemy dies
+                    e->destroy();
+
+                    // Drop a key at the captured position
+                    spawnKey(position);
+                }
+                else {
+                    e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("ArcherHurt");
+                }
+                b->destroy(); // Destroy the bullet
+            }
+        }
+    }
+    
+
     // Player collision with enemies
     for (auto p : players) {
         for (auto e : enemies) {
@@ -502,10 +686,29 @@ void Scene_Play::sCollision() {
             }
         }
     }
+
+	// Player collision with stronger enemies
+
+	for (auto p : players) {
+		for (auto e : strongerEnemies) {
+			auto overlap = Physics::getOverlap(p, e);
+			if (overlap.x > 0 && overlap.y > 0) {
+				auto& playerLifespan = p->getComponent<CLifespan>();
+				playerLifespan.remaining--;
+				if (playerLifespan.remaining <= 0) {
+					p->destroy();
+					onEnd();
+				}
+				else {
+					p->getComponent<CTransform>().vel.y = 5.f;
+					p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("PlayerHurt");
+				}
+			}
+		}
+	}
 }
 
 void Scene_Play::sDoAction(const Action& action) {
-
     if (m_hasEnded) {
         if (action.type() == "START") {
             if (action.name() == "LEVEL2") {
@@ -518,7 +721,7 @@ void Scene_Play::sDoAction(const Action& action) {
                 m_game->changeScene("PLAY", std::make_shared<Scene_Play>(m_game, "level1.txt"));
             }
         }
-        return; 
+        return;
     }
 
     // On Key Press
@@ -529,19 +732,15 @@ void Scene_Play::sDoAction(const Action& action) {
         else if (action.name() == "PAUSE") { setPaused(!m_isPaused); }
         else if (action.name() == "QUIT") { onEnd(); }
 
-
         // Player control
         else if (action.name() == "LEFT") { m_player->getComponent<CInput>().left = true; }
         else if (action.name() == "RIGHT") { m_player->getComponent<CInput>().right = true; }
-
-
         else if (action.name() == "JUMP") {
             if (m_player->getComponent<CInput>().canJump && m_player->getComponent<CState>().test(CState::isGrounded)) {
                 m_player->getComponent<CInput>().up = true;
                 m_player->getComponent<CInput>().canJump = false;
             }
         }
-
         else if (action.name() == "SHOOT") {
             if (m_player->getComponent<CInput>().canShoot) {
                 spawnBullet(m_player);
@@ -549,10 +748,35 @@ void Scene_Play::sDoAction(const Action& action) {
                 m_player->getComponent<CInput>().canShoot = false;
             }
         }
+        else if (action.name() == "INTERACT") {
+            if (m_chest && !m_chestOpened) {
+                // Open the chest and collect the book
+                m_chestOpened = true;
+                m_chest->getComponent<CAnimation>().animation = m_game->assets().getAnimation("ChestOpen"); // Change chest animation to open
+                spawnBook(m_chest->getComponent<CTransform>().pos); // Spawn the book at the chest's position
+                std::cout << "Opened Chest and Collected Book." << std::endl;
+            }
+            else if (m_hasBook) {
+                // Display the message
+                sf::Text message;
+                message.setFont(m_game->assets().getFont("Arial"));
+                message.setCharacterSize(30);
+                message.setFillColor(sf::Color::White);
+                message.setString("You have saved your language and culture.\nNow collect all the gold and go to the next level through the door.");
+                message.setPosition(m_game->window().getSize().x / 2 - 200, m_game->window().getSize().y / 2 - 50);
+                m_game->window().draw(message);
+                m_game->window().display();
+
+                // Open the door
+                if (collectedCoins >= totalCoins) {
+                    m_door->destroy();
+                    std::cout << "Door opened." << std::endl;
+                }
+            }
+        }
     }
 
-
-    // on Key Release
+    // On Key Release
     else if (action.type() == "END") {
         if (action.name() == "LEFT") { m_player->getComponent<CInput>().left = false; }
         else if (action.name() == "RIGHT") { m_player->getComponent<CInput>().right = false; }
@@ -717,22 +941,27 @@ Vec2 Scene_Play::gridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity
 }
 
 void Scene_Play::loadLevel(const std::string& path) {
-    m_entityManager = EntityManager(); // get a new entity manager
+    m_entityManager = EntityManager(); 
 
     // TODO read in level file
     loadFromFile(path);
 
     spawnPlayer();
 	spawnEnemy(m_enemyConfigs);
-    spawnPowerUp(Vec2(120, 100), "Bottle"); // Example position
+    spawnPowerUp(Vec2(120, 100), "Bottle");
     spawnPowerUp(Vec2(320, 300), "Fruit");
 
-    Vec2 doorPosition = Vec2(3000, 100); // Adjust the position as needed
+    Vec2 doorPosition = Vec2(2500, 300); 
     spawnDoor(doorPosition);
+    
+	spawnStrongerEnemy(m_strongerEnemyConfigs);
+    
+
+  spawnChest(Vec2(2500, 100));
+
 }
 
 void Scene_Play::loadFromFile(const std::string& path) {
-    // Read Config file
     std::ifstream confFile(path);
     if (confFile.fail()) {
         std::cerr << "Open file: " << path << " failed\n";
@@ -742,6 +971,7 @@ void Scene_Play::loadFromFile(const std::string& path) {
 
     std::string token{ "" };
     std::vector<EnemyConfig> enemyConfigs;
+    std::vector<EnemyConfig> strongerEnemyConfigs;
     confFile >> token;
     while (confFile) {
         if (token == "Tile") {
@@ -775,7 +1005,7 @@ void Scene_Play::loadFromFile(const std::string& path) {
                 m_playerConfig.GRAVITY >>
                 m_playerConfig.WEAPON;
         }
-		else if (token == "Enemy") {
+        else if (token == "Enemy") {
             EnemyConfig enemyConfig;
             confFile >>
                 enemyConfig.X >>
@@ -792,7 +1022,25 @@ void Scene_Play::loadFromFile(const std::string& path) {
                 enemyConfig.platformEndX >>
                 enemyConfig.WEAPON;
             enemyConfigs.push_back(enemyConfig);
-		}
+        }
+        else if (token == "StrongerEnemy") {
+            EnemyConfig strongerEnemyConfig;
+            confFile >>
+                strongerEnemyConfig.X >>
+                strongerEnemyConfig.Y >>
+                strongerEnemyConfig.CW >>
+                strongerEnemyConfig.CH >>
+                strongerEnemyConfig.SPEED >>
+                strongerEnemyConfig.JUMP >>
+                strongerEnemyConfig.MAXSPEED >>
+                strongerEnemyConfig.GRAVITY >>
+                strongerEnemyConfig.DETECTION_RANGE >>
+                strongerEnemyConfig.ATTACK_RANGE >>
+                strongerEnemyConfig.platformStartX >>
+                strongerEnemyConfig.platformEndX >>
+                strongerEnemyConfig.WEAPON;
+            strongerEnemyConfigs.push_back(strongerEnemyConfig);
+        }
         else if (token == "Coin") {
             float gx, gy;
             confFile >> gx >> gy;
@@ -802,40 +1050,41 @@ void Scene_Play::loadFromFile(const std::string& path) {
             coin->addComponent<CTransform>(gridToMidPixel(gx, gy, coin));
             coin->addComponent<CBoundingBox>(Vec2(20, 20)); // Adjust the size as needed
         }
-		else if (token == "Arrow") {
-			float gx, gy;
-			confFile >> gx >> gy;
-			auto arrow = m_entityManager.addEntity("arrow");
-			arrow->addComponent<CAnimation>(m_game->assets().getAnimation("Arrow"), true);
-			arrow->addComponent<CTransform>(gridToMidPixel(gx, gy, arrow));
-		}
-		else if (token == "Bottle") {
-			float gx, gy;
-			confFile >> gx >> gy;
-			auto bottle = m_entityManager.addEntity("Bottle");
-			bottle->addComponent<CAnimation>(m_game->assets().getAnimation("Bottle"), true);
-			bottle->addComponent<CTransform>(gridToMidPixel(gx, gy, bottle));
-		}
-		else if (token == "Fruit") {
-			float gx, gy;
-			confFile >> gx >> gy;
-			auto fruit = m_entityManager.addEntity("Fruit");
-			fruit->addComponent<CAnimation>(m_game->assets().getAnimation("Fruit"), true);
-			fruit->addComponent<CTransform>(gridToMidPixel(gx, gy, fruit));
-		}
+        else if (token == "Arrow") {
+            float gx, gy;
+            confFile >> gx >> gy;
+            auto arrow = m_entityManager.addEntity("arrow");
+            arrow->addComponent<CAnimation>(m_game->assets().getAnimation("Arrow"), true);
+            arrow->addComponent<CTransform>(gridToMidPixel(gx, gy, arrow));
+        }
+        else if (token == "Bottle") {
+            float gx, gy;
+            confFile >> gx >> gy;
+            auto bottle = m_entityManager.addEntity("Bottle");
+            bottle->addComponent<CAnimation>(m_game->assets().getAnimation("Bottle"), true);
+            bottle->addComponent<CTransform>(gridToMidPixel(gx, gy, bottle));
+        }
+        else if (token == "Fruit") {
+            float gx, gy;
+            confFile >> gx >> gy;
+            auto fruit = m_entityManager.addEntity("Fruit");
+            fruit->addComponent<CAnimation>(m_game->assets().getAnimation("Fruit"), true);
+            fruit->addComponent<CTransform>(gridToMidPixel(gx, gy, fruit));
+        }
         else if (token == "#") {
             std::string tmp;
             std::getline(confFile, tmp);
             std::cout << "# " << tmp << "\n";
         }
         else {
-            std::cerr << "Unkown asset type: " << token << std::endl;
+            std::cerr << "Unknown asset type: " << token << std::endl;
         }
 
         confFile >> token;
     }
 
     m_enemyConfigs = enemyConfigs;
+    m_strongerEnemyConfigs = strongerEnemyConfigs;
 }
 
 void Scene_Play::spawnPlayer() {
@@ -931,7 +1180,7 @@ void Scene_Play::spawnEnemy(const std::vector<EnemyConfig>& configs) {
         enemy->addComponent<CState>();
         enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
         enemy->addComponent<CHealth>(100);
-        enemy->addComponent<CAttackTimer>(2.0f);
+        enemy->addComponent<CAttackTimer>(1.0f);
 
         Vec2 pos = gridToMidPixel(config.X, config.Y, enemy);
         std::cout << "Converted position: " << pos.x << ", " << pos.y << std::endl;
@@ -953,7 +1202,13 @@ void Scene_Play::respawnEnemy(std::shared_ptr<Entity> enemy) {
     auto& transform = enemy->getComponent<CTransform>();
     transform.pos = m_enemyRespawnPoints[enemy];
     transform.vel = Vec2(0.f, 0.f);
-    std::cout << "Respawned enemy at: " << transform.pos.x << ", " << transform.pos.y << std::endl;
+
+    if (enemy->getComponent<CAnimation>().animation.getName() == "StrongerEnemy") {
+        std::cout << "Respawned stronger enemy at: " << transform.pos.x << ", " << transform.pos.y << std::endl;
+    }
+    else {
+        std::cout << "Respawned enemy at: " << transform.pos.x << ", " << transform.pos.y << std::endl;
+    }
 }
 
 void Scene_Play::checkLoseCondition() {
@@ -983,6 +1238,16 @@ void Scene_Play::checkLoseCondition() {
         auto& enemyTransform = enemy->getComponent<CTransform>();
 
         // Check if the enemy has fallen off the screen
+        if (enemyTransform.pos.y > m_game->window().getSize().y) {
+            respawnEnemy(enemy);
+        }
+    }
+
+    auto strongerEnemies = m_entityManager.getEntities("stronger_enemy");
+    for (auto& enemy : strongerEnemies) {
+        auto& enemyTransform = enemy->getComponent<CTransform>();
+
+        // Check if the stronger enemy has fallen off the screen
         if (enemyTransform.pos.y > m_game->window().getSize().y) {
             respawnEnemy(enemy);
         }
@@ -1125,11 +1390,125 @@ void Scene_Play::spawnKey(const Vec2& position)
 void Scene_Play::spawnDoor(const Vec2& position)
 {
 	auto door = m_entityManager.addEntity("door");
-	door->addComponent<CAnimation>(m_game->assets().getAnimation("Door"), true);
+	door->addComponent<CAnimation>(m_game->assets().getAnimation("DoorClose"), true);
 	door->addComponent<CTransform>(position);
 	door->addComponent<CBoundingBox>(Vec2(20, 20)); // Adjust the size as needed
 	std::cout << "Spawned Door at position: " << position.x << ", " << position.y << std::endl;
 
 }
 
+void Scene_Play::spawnStrongerEnemy(const std::vector<EnemyConfig>& configs) {
+	for (const auto& config : configs) {
+		auto enemy = m_entityManager.addEntity("stronger_enemy");
+		enemy->addComponent<CAnimation>(m_game->assets().getAnimation("StrongerEnemy"), true);
+		enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
+		enemy->addComponent<CState>();
+		enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
+		enemy->addComponent<CHealth>(100);
+		enemy->addComponent<CAttackTimer>(0.5f);
+		Vec2 pos = gridToMidPixel(config.X, config.Y, enemy);
+		std::cout << "Converted position: " << pos.x << ", " << pos.y << std::endl;
+		enemy->addComponent<CTransform>(pos);
+		auto& transform = enemy->getComponent<CTransform>();
+		transform.vel.x = config.SPEED;
+		transform.vel.y = config.GRAVITY;
+		std::cout << "Spawned stronger enemy at: " << config.X << ", " << config.Y
+			<< " with weapon: " << config.WEAPON << std::endl;
+		// Store the respawn point for the stronger enemy
+        m_enemyRespawnPoints[enemy] = pos;
+	}
+}
+
+void Scene_Play::spawnChest(const Vec2& position) {
+    m_chest = m_entityManager.addEntity("chest");
+    m_chest->addComponent<CAnimation>(m_game->assets().getAnimation("ChestClose"), true);
+    m_chest->addComponent<CTransform>(position);
+    m_chest->addComponent<CBoundingBox>(Vec2(20, 20)); // Adjust the size as needed
+    std::cout << "Spawned Chest at position: " << position.x << ", " << position.y << std::endl;
+}
+
+void Scene_Play::spawnBook(const Vec2& position) {
+    m_book = m_entityManager.addEntity("book");
+    m_book->addComponent<CAnimation>(m_game->assets().getAnimation("Book"), true);
+    m_book->addComponent<CTransform>(position);
+    m_book->addComponent<CBoundingBox>(Vec2(10, 10)); // Adjust the size as needed
+    std::cout << "Spawned Book at position: " << position.x << ", " << position.y << std::endl;
+}
+
+void Scene_Play::sStrongerEnemyBehavior() {
+    auto strongerEnemies = m_entityManager.getEntities("stronger_enemy");
+    for (auto enemy : strongerEnemies) {
+        if (!enemy->hasComponent<CAttackTimer>()) continue;
+
+        auto& transform = enemy->getComponent<CTransform>();
+        auto& attackTimer = enemy->getComponent<CAttackTimer>();
+
+        // Decrease the timeLeft by deltaTime
+        attackTimer.timeLeft -= m_game->deltaTime();
+
+        bool playerNearby = false;
+        bool attacking = false;
+
+        // Check for players
+        auto players = m_entityManager.getEntities("player");
+        for (auto player : players) {
+            auto& playerTransform = player->getComponent<CTransform>();
+            float distance = std::abs(transform.pos.x - playerTransform.pos.x);
+
+            // **Always face the player**
+            if (playerTransform.pos.x < transform.pos.x) {
+                transform.scale.x = -1; // Face left
+                enemy->getComponent<CState>().set(CState::isFacingLeft);
+            }
+            else {
+                transform.scale.x = 1; // Face right
+                enemy->getComponent<CState>().unSet(CState::isFacingLeft);
+            }
+
+            if (distance < 200) {
+                playerNearby = true;
+
+                // Attack only if cooldown is over
+                if (attackTimer.timeLeft <= 0) {
+                    attackTimer.timeLeft = 1.0f;  // **Reset cooldown BEFORE attacking**
+
+                    if (distance < 50) {
+                        meleeAttack(enemy);
+                    }
+                    else {
+                        rangedAttack(enemy);
+                    }
+
+                    attacking = true;  // Mark that the enemy is attacking
+                }
+            }
+        }
+
+        // If no player is nearby, patrol
+        if (!playerNearby) {
+            if (checkPlatformEdge(enemy)) {
+                transform.vel.x *= -1;  // Reverse direction
+                transform.scale.x *= -1;  // Flip sprite direction
+
+                if (transform.vel.x < 0) {
+                    enemy->getComponent<CState>().set(CState::isFacingLeft);
+                }
+                else {
+                    enemy->getComponent<CState>().unSet(CState::isFacingLeft);
+                }
+            }
+        }
+        else if (!attacking) {
+            // If player is nearby but not attacking, move slightly toward them
+            transform.vel.x = (transform.scale.x == 1) ? 1.0f : -1.0f;  // Faster approach
+        }
+        else {
+            transform.vel.x = 0;  // Stop movement while attacking
+        }
+
+        // Move enemy
+        transform.pos.x += transform.vel.x * m_game->deltaTime();
+        transform.pos.y += transform.vel.y;
+    }
+}
 
