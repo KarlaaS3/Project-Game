@@ -48,7 +48,7 @@ protected:
 	std::vector<EnemyConfig>    m_strongerEnemyConfigs;
 	std::priority_queue<SpawnPoint>     _spawnPoints;
 	bool						m_drawTextures{true};						
-	bool						m_drawCollision{true}; 
+	bool						m_drawCollision{false}; 
 	bool						m_drawGrid{false};
 	int                         collectedCoins{ 0 };
 	int                         m_playerArrows{ 10 };
