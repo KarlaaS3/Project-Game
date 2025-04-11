@@ -51,8 +51,8 @@ protected:
 	bool						m_drawCollision{false}; 
 	bool						m_drawGrid{false};
 	int                         collectedCoins{ 0 };
-	int                         m_playerArrows{ 100 };
-	int                         totalCoins{ 1 };
+	int                         m_playerArrows{ 7 };
+	int                         totalCoins{ 20 };
 	bool						m_hasKey{ false };
 	bool                        m_hasBook{ false };
 	bool                        m_chestOpened{ false };
