@@ -61,12 +61,12 @@ protected:
 	sf::Text					m_gridText;
 	sf::Sprite                  m_backgroundSprite;
 	sf::Music                   m_backgroundMusic;
-	sf::Sound m_victorySound;
-	std::string m_message;
-	float m_messageDuration{ 0.f };
-	sf::Text m_messageText;
-	Animation m_coinAnimation; 
-	Animation m_arrowAnimation;
+	sf::Sound                   m_victorySound;
+	std::string                 m_message;
+	float                       m_messageDuration{ 0.f };
+	sf::Text                    m_messageText;
+	Animation                   m_coinAnimation; 
+	Animation                   m_arrowAnimation;
 	float m_ovalAnimationTime{ 0.0f };
 	sf::Shader m_glowShader;
 	const float POWER_UP_DROP_PROBABILITY = 0.7f; // 30% chance to drop a power-up

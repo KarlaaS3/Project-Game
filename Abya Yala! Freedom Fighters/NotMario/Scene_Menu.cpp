@@ -32,7 +32,7 @@ void Scene_Menu::init()
     m_title = "Abya Yala!"; // Freedom Fighters
     m_subtitle = "Freedom Fighters";
     m_menuStrings.push_back("Level 1");
-    m_menuStrings.push_back("Level 2");
+    //m_menuStrings.push_back("Level 2");
     m_menuStrings.push_back("Instructions"); 
 
     m_levelPaths.push_back("../assets/level1.txt");
@@ -121,7 +121,6 @@ void Scene_Menu::sDoAction(const Action& action)
         }
     }
 }
-
 
 void Scene_Menu::update()
 {

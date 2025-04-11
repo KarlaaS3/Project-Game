@@ -135,7 +135,6 @@ void Scene_Play::sRender() {
 
     if (m_hasEnded) {
         drawWinScreen();
-        m_game->window().display();
         return;
     }
 
@@ -449,8 +448,8 @@ void Scene_Play::sCollision() {
         for (auto k : m_entityManager.getEntities("key")) {
             auto overlap = Physics::getOverlap(p, k);
             if (overlap.x > 0 && overlap.y > 0) {
-                m_hasKey = true; // Player has the key
-                k->destroy(); // Destroy the key
+                m_hasKey = true; 
+                k->destroy(); 
                 setMessage("Collected Key", 2.0f);
             }
         }
@@ -461,7 +460,6 @@ void Scene_Play::sCollision() {
             if (overlap.x > 0 && overlap.y > 0) {
                 m_door = d; // Store the door entity
                 if (m_hasBook) {
-                    // Display message if the door is already opened
                     d->getComponent<CAnimation>().animation = m_game->assets().getAnimation("DoorTotalOpen");
                     setMessage("This door is already opened", 2.0f);
                 }
@@ -475,9 +473,8 @@ void Scene_Play::sCollision() {
         for (auto c : m_entityManager.getEntities("chest")) {
             auto overlap = Physics::getOverlap(p, c);
             if (overlap.x > 0 && overlap.y > 0) {
-                m_chest = c; // Store the chest entity
+                m_chest = c; 
                 if (m_chestOpened) {
-                    // Display message if the chest is already opened
                     c->getComponent<CAnimation>().animation = m_game->assets().getAnimation("ChestOpen");
                     setMessage("This chest is already opened", 2.0f);
                 }
@@ -592,10 +589,9 @@ void Scene_Play::sCollision() {
                 auto overlap = Physics::getOverlap(e, b);
                 if (overlap.x > 0 && overlap.y > 0) {
                     auto& enemyHealth = e->getComponent<CHealth>();
-                    enemyHealth.remaining -= 10; // Reduce health
-                    enemyHealth.hurtTimer = 1.0f; // Set hurt timer 
+                    enemyHealth.remaining -= 10;
+                    enemyHealth.hurtTimer = 1.0f; 
                     if (enemyHealth.remaining <= 0) {
-                        // Enemy dies
                         e->destroy();
 
                         // Spawn power-ups with a probability check
@@ -612,7 +608,7 @@ void Scene_Play::sCollision() {
                     else {
                         e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Hurt");
                     }
-                    b->destroy(); // Destroy the bullet
+                    b->destroy();
                 }
             }
         }
@@ -737,6 +733,16 @@ void Scene_Play::sCollision() {
                         p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("PlayerHurt");
                     }
                 }
+            }
+        }
+    }
+
+    // Bullet collision with ground
+    for (auto b : bullets) {
+        for (auto g : ground) {
+            auto overlap = Physics::getOverlap(b, g);
+            if (overlap.x > 0 && overlap.y > 0) {
+                b->destroy(); // Destroy the bullet
             }
         }
     }
@@ -949,43 +955,16 @@ void Scene_Play::drawWinScreen()
     m_victorySound.setBuffer(m_game->assets().getSound("Victory"));
     m_victorySound.play();
 
+    // Load the win texture
+    const sf::Texture& winTexture = m_game->assets().getTexture("Win");
+    if (!winTexture.getSize().x || !winTexture.getSize().y) {
+        std::cerr << "Failed to load win texture" << std::endl;
+        return;
+    }
+
+    m_backgroundSprite.setTexture(winTexture);
     m_backgroundSprite.setPosition(0, 0);
     m_game->window().draw(m_backgroundSprite);
-
-    // Title text
-    sf::Text titleText;
-    titleText.setFont(m_game->assets().getFont("Bungee"));
-    titleText.setCharacterSize(60);
-    titleText.setFillColor(sf::Color(255, 215, 0)); // Gold color
-    titleText.setString("You Win!");
-    titleText.setPosition(100, 50); // Set the position explicitly
-
-    // Main message text
-    sf::Text gameOverText;
-    gameOverText.setFont(m_game->assets().getFont("Bungee"));
-    gameOverText.setCharacterSize(40);
-    gameOverText.setFillColor(sf::Color::White);
-    gameOverText.setString("You have saved your culture and language\nby collecting the ancient book and the gold.");
-    gameOverText.setPosition(100, 150); // Set the position explicitly
-
-    // Options text
-    sf::Text options;
-    options.setFont(m_game->assets().getFont("Bungee"));
-    options.setCharacterSize(30);
-    options.setFillColor(sf::Color::Yellow);
-    options.setString("1 - Level 2\n2 - Menu\n3 - Restart Level 1");
-    options.setPosition(100, 300); // Set the position explicitly
-
-    // Draw all texts
-    m_game->window().draw(titleText);
-    m_game->window().draw(gameOverText);
-    m_game->window().draw(options);
-
-    // Add a celebratory icon (e.g., a trophy)
-    sf::Sprite trophySprite;
-    trophySprite.setTexture(m_game->assets().getTexture("Trophy"));
-    trophySprite.setPosition(500, 50); // Set the position explicitly
-    m_game->window().draw(trophySprite);
 
     // Display the window
     m_game->window().display();
@@ -1018,6 +997,9 @@ void Scene_Play::loadLevel(const std::string& path) {
 	spawnEnemy(m_enemyConfigs);
     spawnPowerUp(Vec2(120, 100), "Bottle");
     spawnPowerUp(Vec2(320, 300), "Fruit");
+    spawnPowerUp(Vec2(1000, 500), "Bottle");
+    spawnPowerUp(Vec2(2000, 500), "Bottle");
+    spawnPowerUp(Vec2(1500, 500), "Fruit");
 
     Vec2 doorPosition = Vec2(2500, 312); 
     spawnDoor(doorPosition);
@@ -1401,6 +1383,9 @@ void Scene_Play::sEnemyBehavior() {
                         rangedAttack(enemy);
                     }
 
+                    // Set attack animation
+                    enemy->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Attack");
+
                     attacking = true;  // Mark that the enemy is attacking
                 }
             }
@@ -1466,7 +1451,7 @@ void Scene_Play::spawnStrongerEnemy(const std::vector<EnemyConfig>& configs) {
         enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
         enemy->addComponent<CState>();
         enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
-        enemy->addComponent<CHealth>(100); // Set maximum health
+        enemy->addComponent<CHealth>(10); 
         enemy->addComponent<CAttackTimer>(0.5f);
 
         Vec2 pos = gridToMidPixel(config.X, config.Y, enemy);
@@ -1480,7 +1465,6 @@ void Scene_Play::spawnStrongerEnemy(const std::vector<EnemyConfig>& configs) {
         std::cout << "Spawned stronger enemy at: " << config.X << ", " << config.Y
             << " with weapon: " << config.WEAPON << std::endl;
 
-        // Store the respawn point for the stronger enemy
         m_enemyRespawnPoints[enemy] = pos;
     }
 }
@@ -1509,7 +1493,6 @@ void Scene_Play::sStrongerEnemyBehavior() {
         auto& transform = enemy->getComponent<CTransform>();
         auto& attackTimer = enemy->getComponent<CAttackTimer>();
 
-        // Decrease the timeLeft by deltaTime
         attackTimer.timeLeft -= m_game->deltaTime();
 
         bool playerNearby = false;
@@ -1521,13 +1504,12 @@ void Scene_Play::sStrongerEnemyBehavior() {
             auto& playerTransform = player->getComponent<CTransform>();
             float distance = std::abs(transform.pos.x - playerTransform.pos.x);
 
-            // **Always face the player**
             if (playerTransform.pos.x < transform.pos.x) {
                 transform.scale.x = -1; // Face left
                 enemy->getComponent<CState>().set(CState::isFacingLeft);
             }
             else {
-                transform.scale.x = 1; // Face right
+                transform.scale.x = 1; 
                 enemy->getComponent<CState>().unSet(CState::isFacingLeft);
             }
 
@@ -1536,7 +1518,7 @@ void Scene_Play::sStrongerEnemyBehavior() {
 
                 // Attack only if cooldown is over
                 if (attackTimer.timeLeft <= 0) {
-                    attackTimer.timeLeft = 1.0f;  // **Reset cooldown BEFORE attacking**
+                    attackTimer.timeLeft = 1.0f;  // Reset cooldown BEFORE attacking**
 
                     if (distance < 50) {
                         meleeAttack(enemy);

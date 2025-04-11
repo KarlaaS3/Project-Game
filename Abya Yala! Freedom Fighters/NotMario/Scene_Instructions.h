@@ -1,5 +1,4 @@
 #pragma once
-
 #include "Scene.h"
 #include "GameEngine.h"
 #include <SFML/Graphics.hpp>
@@ -7,10 +6,11 @@
 class Scene_Instructions : public Scene
 {
 private:
-    sf::Text m_instructionsText;
+    sf::Text m_additionalInstructionsText;
     sf::Sprite m_backgroundSprite;
+    sf::View m_view;
     void init();
-    void onEnd() override; // Declare the onEnd method
+    void onEnd() override; 
 
 public:
     Scene_Instructions(GameEngine* gameEngine);

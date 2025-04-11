@@ -13,26 +13,10 @@ void Scene_Instructions::init()
     registerAction(sf::Keyboard::Escape, "QUIT");
     registerAction(sf::Keyboard::Enter, "PLAY"); // Register the "PLAY" action
 
-    // Customize the instructions text
-    m_instructionsText.setFont(m_game->assets().getFont("Bungee")); // Set the font
-    m_instructionsText.setCharacterSize(30); // Set the character size
-    m_instructionsText.setFillColor(sf::Color::Yellow); // Set the fill color
-    m_instructionsText.setOutlineThickness(2); // Set the outline thickness
-    m_instructionsText.setOutlineColor(sf::Color::Black); // Set the outline color
-    m_instructionsText.setString(
-        "Instructions:\n\n"
-        "Use W or Up Arrow to move up\n"
-        "Use S or Down Arrow to move down\n"
-        "Press D to play\n"
-        "Press ESC to quit\n"
-        "Press Enter to start the game"
-    );
-    m_instructionsText.setPosition(50, 50); // Set the position
-
-    // Set the background texture
-    if (m_game->assets().getTexture("TexMenu").getSize().x > 0)
+    // Set the background texture to "Instructions"
+    if (m_game->assets().getTexture("Instructions").getSize().x > 0)
     {
-        m_backgroundSprite.setTexture(m_game->assets().getTexture("TexMenu"));
+        m_backgroundSprite.setTexture(m_game->assets().getTexture("Instructions"));
 
         // Customize the background sprite
         m_backgroundSprite.setPosition(0, 0); // Set the position
@@ -41,6 +25,15 @@ void Scene_Instructions::init()
             static_cast<float>(m_game->window().getSize().y) / m_backgroundSprite.getTexture()->getSize().y
         ); // Scale to fit the window
     }
+
+    // Customize the additional instructions text
+    m_additionalInstructionsText.setFont(m_game->assets().getFont("Bungee")); // Set the font
+    m_additionalInstructionsText.setCharacterSize(20); // Set the character size
+    m_additionalInstructionsText.setFillColor(sf::Color::White); // Set the fill color
+    m_additionalInstructionsText.setOutlineThickness(1); // Set the outline thickness
+    m_additionalInstructionsText.setOutlineColor(sf::Color::Black); 
+    m_additionalInstructionsText.setString("ESC: Go back    Enter: Start game");
+    m_additionalInstructionsText.setPosition(50, m_game->window().getSize().y - 50); 
 }
 
 void Scene_Instructions::update()
@@ -56,7 +49,7 @@ void Scene_Instructions::sRender()
 
     m_game->window().clear();
     m_game->window().draw(m_backgroundSprite); // Draw the customized background sprite
-    m_game->window().draw(m_instructionsText); // Draw the instructions text
+    m_game->window().draw(m_additionalInstructionsText); // Draw the additional instructions text
     m_game->window().display();
 }
 
@@ -77,5 +70,5 @@ void Scene_Instructions::sDoAction(const Action& action)
 
 void Scene_Instructions::onEnd()
 {
-	m_game->changeScene("MENU", nullptr, true);
+    m_game->changeScene("MENU", nullptr, true);
 }

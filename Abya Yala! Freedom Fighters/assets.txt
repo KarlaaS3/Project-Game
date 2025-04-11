@@ -23,7 +23,7 @@ Texture TexExplode 	../assets/misc/explosion.png
 Texture TexCoin 	../assets/misc/coinspin.png
 Texture TexBrick 	../assets/mario/brick.png
 Texture TexMenu         ../assets/mario/TreeBackground.png
-Texture TexEnemy           ../assets/mario/enemyWalk.png
+Texture TexEnemy        ../assets/mario/enemyWalk.png
 Texture TexAttack       ../assets/mario/Attack.png
 Texture TexHurt       ../assets/mario/Hurt.png
 Texture TexDeath       ../assets/mario/Death.png
@@ -32,7 +32,7 @@ Texture EmptyHeart     ../assets/mario/EmptyHeart.png
 Texture Heart          ../assets/mario/Heart.png
 Texture TexSCoin       ../assets/mario/SmallCoin.png
 Texture Trophy         ../assets/misc/trophy.png
-
+Texture Instructions   ../assets/mario/instructions.png
 Texture Background      ../assets/mario/TreeBackground.png
 Texture Anim1           ../assets/mario/Anim1.png
 Texture Anim2           ../assets/mario/Anim2.png
@@ -48,6 +48,7 @@ Texture TexArcher       ../assets/mario/characters/ArcherAttack2.png
 Texture TexArcherH      ../assets/mario/characters/ArcherHurt.png   
 Texture TexCloseDoor    ../assets/door/DoorClose.png
 Texture TexDoor1        ../assets/door/DoorOpen1.png
+Texture Win             ../assets/mario/Win.png
 
 
 
