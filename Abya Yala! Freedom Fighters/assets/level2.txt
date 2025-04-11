@@ -181,7 +181,34 @@ Tile Brick              3       0
 Coin                    3      1
 Coin                    4      1
 Coin                    5      1
+Coin                    6      1
+Coin                    7      1
+Coin                    8      1
+Coin                    9      1
+Coin                    10     1
+Coin                    11     1
+Coin                    12     1
+Coin                    13     1
+Coin                    14     1
+Coin                    15     1
 
+Coin                    6      5
+Coin                    7      5
+Coin                    8      5
+Coin                    9      5
+Coin                    10     5
+
+Coin                    2      9
+Coin                    3      9
+Coin                    4      9
+Coin                    5      9
+Coin                    6      9
+Coin                    7      9
+Coin                    14     9
+Coin                    15     9
+Coin                    16     9
+Coin                    17     9
+Coin                    18     9
 
 #     gX, gY, cW, cH, sX, sY,  sM,  g,   bullet 
 Player -2   2  40  60   5  20  20  0.75  Arrow

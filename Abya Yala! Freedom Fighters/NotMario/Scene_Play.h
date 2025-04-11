@@ -51,8 +51,8 @@ protected:
 	bool						m_drawCollision{false}; 
 	bool						m_drawGrid{false};
 	int                         collectedCoins{ 0 };
-	int                         m_playerArrows{ 10 };
-	int                         totalCoins{ 29 };
+	int                         m_playerArrows{ 100 };
+	int                         totalCoins{ 1 };
 	bool						m_hasKey{ false };
 	bool                        m_hasBook{ false };
 	bool                        m_chestOpened{ false };
@@ -60,6 +60,11 @@ protected:
 	const Vec2					m_gridSize{ 50,50 };
 	sf::Text					m_gridText;
 	sf::Sprite                  m_backgroundSprite;
+	sf::Music                   m_backgroundMusic;
+	sf::Sound m_victorySound;
+	std::string m_message;
+	float m_messageDuration{ 0.f };
+	sf::Text m_messageText;
 	Animation m_coinAnimation; 
 	Animation m_arrowAnimation;
 	float m_ovalAnimationTime{ 0.0f };
@@ -123,6 +128,9 @@ public:
 	void spawnStrongerEnemy(const std::vector<EnemyConfig>& configs);
 	void spawnChest(const Vec2& position);
 	void spawnBook(const Vec2& position);
+	void drawMessage();
+	void clearMessage();
+	void setMessage(const std::string& message, float duration);
 
 };
 

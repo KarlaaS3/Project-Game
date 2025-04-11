@@ -52,6 +52,7 @@ struct CInput : public Component
 	bool shoot		{false};
 	bool canShoot	{true};
 	bool canJump	{true};
+	float invincibilityTimer{ 0.f };
 
 	CInput() = default;
 };
@@ -153,6 +154,7 @@ struct CHealth : public Component
 {
 	int health{ 0 }; // Maximum health
 	int remaining{ 0 }; // Current health
+	float hurtTimer{ 0.f };
 	CHealth() = default;
 	CHealth(int h) : health(h), remaining(h) {}
 };	

@@ -109,6 +109,7 @@ void Scene_Menu::sDoAction(const Action& action)
                 m_game->changeScene("INSTRUCTIONS", std::make_shared<Scene_Instructions>(m_game));
             }
             else {
+                m_backgroundMusic.stop(); // Stop the background music
                 m_transitionEffect.startFadeOut();
                 m_sceneChangePending = true;
                 m_applyTransition = true;
@@ -120,6 +121,7 @@ void Scene_Menu::sDoAction(const Action& action)
         }
     }
 }
+
 
 void Scene_Menu::update()
 {
@@ -148,10 +150,11 @@ void Scene_Menu::update()
     if (m_sceneChangePending && !m_transitionEffect.isFadingOut())
     {
         if (m_applyTransition) {
+            m_backgroundMusic.stop(); // Stop the background music
             m_game->changeScene("PLAY", std::make_shared<Scene_Play>(m_game, m_levelPaths[m_menuIndex]));
         }
         m_sceneChangePending = false;
-        m_applyTransition = false; 
+        m_applyTransition = false;
     }
 
     sRender();

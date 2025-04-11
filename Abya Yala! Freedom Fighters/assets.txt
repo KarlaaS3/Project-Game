@@ -6,6 +6,7 @@ Shader Glow             ../assets/shaders/glow.frag
 Music Menu              ../assets/music/menu_music.mp3
 Sound Hover             ../assets/sound/Hover.mp3
 Sound Select            ../assets/sound/Select.mp3
+Sound Victory           ../assets/sound/Victory.mp3
 
 Font Bungee             ../assets/fonts/bungee.ttf
 Font Arial 		../assets/fonts/arial.ttf  
@@ -30,6 +31,7 @@ Texture TexPlayerHurt  ../assets/mario/Soldier-Hurt.png
 Texture EmptyHeart     ../assets/mario/EmptyHeart.png
 Texture Heart          ../assets/mario/Heart.png
 Texture TexSCoin       ../assets/mario/SmallCoin.png
+Texture Trophy         ../assets/misc/trophy.png
 
 Texture Background      ../assets/mario/TreeBackground.png
 Texture Anim1           ../assets/mario/Anim1.png
@@ -60,9 +62,9 @@ Animation Explosion		TexExplode	16 	4
 Animation Coin			TexCoin		12	2
 Animation SmallCoin		TexSCoin	12	2
 Animation Attack                TexAttack       10      5
-Animation Hurt                  TexHurt         4       2
+Animation Hurt                  TexHurt         4       1
 Animation Death                 TexDeath        4       5
-Animation PlayerHurt            TexPlayerHurt   4       2
+Animation PlayerHurt            TexPlayerHurt   4       3
 Animation Bottle                TexBottle       10      5
 Animation Fruit                 TexFruit        11      5
 Animation DoorOpen              TexDoor         5       5

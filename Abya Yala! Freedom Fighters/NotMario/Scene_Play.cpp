@@ -2,8 +2,11 @@
 #include "Entity.h"
 #include "Components.h"
 #include "Physics.h"
-
+#include <SFML/Graphics.hpp>
+#include <SFML/OpenGL.hpp>
 #include <string>
+
+static void drawGradientText(sf::RenderWindow& window, sf::Text& text, const sf::Color& gradientTop, const sf::Color& gradientBottom, sf::Shader& shader);
 
 Scene_Play::Scene_Play(GameEngine* gameEngine, const std::string& levelPath)
     : Scene(gameEngine)
@@ -17,13 +20,28 @@ void Scene_Play::init(const std::string& levelPath) {
     m_gridText.setCharacterSize(12);
     m_gridText.setFont(m_game->assets().getFont("Arial"));
 
-    sf::Texture& backgroundTexture = const_cast<sf::Texture&>(m_game->assets().getTexture("Background"));
+    sf::Texture& backgroundTexture = (levelPath == "level2.txt") ?
+        const_cast<sf::Texture&>(m_game->assets().getTexture("Anim2")) :
+        const_cast<sf::Texture&>(m_game->assets().getTexture("Background"));
+
     backgroundTexture.setRepeated(true);
     m_backgroundSprite.setTexture(backgroundTexture);
 
     // Initialize the coin animation
     m_coinAnimation = m_game->assets().getAnimation("SmallCoin");
     m_arrowAnimation = m_game->assets().getAnimation("Arrow");
+
+    // Initialize the message text
+    m_messageText.setFont(m_game->assets().getFont("Bungee"));
+    m_messageText.setCharacterSize(26);
+    m_messageText.setFillColor(sf::Color::White);
+
+    // Load and play background music
+    if (!m_backgroundMusic.openFromFile(m_game->assets().getMusic("Menu"))) {
+        std::cerr << "Failed to load background music" << std::endl;
+    }
+    m_backgroundMusic.setLoop(true);
+    m_backgroundMusic.play();
 
     loadLevel(levelPath);
 }
@@ -55,6 +73,14 @@ void Scene_Play::registerActions() {
 void Scene_Play::update() {
     if (m_hasEnded) return;
     m_entityManager.update();
+
+    // Decrease the message duration
+    if (m_messageDuration > 0) {
+        m_messageDuration -= m_game->deltaTime();
+        if (m_messageDuration <= 0) {
+            clearMessage();
+        }
+    }
 
     // Increment the elapsed time for the oval animation
     m_ovalAnimationTime += m_game->deltaTime();
@@ -109,6 +135,7 @@ void Scene_Play::sRender() {
 
     if (m_hasEnded) {
         drawWinScreen();
+        m_game->window().display();
         return;
     }
 
@@ -176,6 +203,7 @@ void Scene_Play::sRender() {
     drawLifeSpan();
     drawCoinsCounter();
     drawArrowsCounter();
+    drawMessage();
 
     // Draw grid (optional debugging)
     if (m_drawGrid) {
@@ -338,6 +366,12 @@ void Scene_Play::sCollision() {
 
     for (auto p : players) {
         p->getComponent<CState>().unSet(CState::isGrounded); // not grounded
+
+        // Update invincibility timer
+        if (p->getComponent<CInput>().invincibilityTimer > 0) {
+            p->getComponent<CInput>().invincibilityTimer -= m_game->deltaTime();
+        }
+
         for (auto t : tiles) {
             auto overlap = Physics::getOverlap(p, t);
             if (overlap.x > 0 && overlap.y > 0) // +ve overlap in both x and y means collision
@@ -407,7 +441,7 @@ void Scene_Play::sCollision() {
                 m_hasBook = true; // Player has the book
                 m_door->getComponent<CAnimation>().animation = m_game->assets().getAnimation("DoorOpen");
                 b->destroy(); // Destroy the book
-                std::cout << "Collected Book." << std::endl;
+                setMessage("Collected Book", 2.0f);
             }
         }
 
@@ -417,7 +451,7 @@ void Scene_Play::sCollision() {
             if (overlap.x > 0 && overlap.y > 0) {
                 m_hasKey = true; // Player has the key
                 k->destroy(); // Destroy the key
-                std::cout << "Collected Key." << std::endl;
+                setMessage("Collected Key", 2.0f);
             }
         }
 
@@ -425,14 +459,14 @@ void Scene_Play::sCollision() {
         for (auto d : m_entityManager.getEntities("door")) {
             auto overlap = Physics::getOverlap(p, d);
             if (overlap.x > 0 && overlap.y > 0) {
-				m_door = d; // Store the door entity
-				if (m_hasBook) {
-					// Display message if the door is already opened
-					d->getComponent<CAnimation>().animation = m_game->assets().getAnimation("DoorTotalOpen");
-					std::cout << "This door is already opened." << std::endl;
-				}
+                m_door = d; // Store the door entity
+                if (m_hasBook) {
+                    // Display message if the door is already opened
+                    d->getComponent<CAnimation>().animation = m_game->assets().getAnimation("DoorTotalOpen");
+                    setMessage("This door is already opened", 2.0f);
+                }
                 else {
-                    std::cout << "You need a key to open this door." << std::endl;
+                    setMessage("You need a key to open this door", 2.0f);
                 }
             }
         }
@@ -445,10 +479,13 @@ void Scene_Play::sCollision() {
                 if (m_chestOpened) {
                     // Display message if the chest is already opened
                     c->getComponent<CAnimation>().animation = m_game->assets().getAnimation("ChestOpen");
-                    std::cout << "This chest is already opened." << std::endl;
+                    setMessage("This chest is already opened", 2.0f);
                 }
-                else {                  
-                    std::cout << "Press 'F' to open the chest." << std::endl;
+                else if (m_hasKey) {
+                    setMessage("Press 'F' to open the chest", 2.0f);
+                }
+                else {
+                    setMessage("You need a key to open this chest", 2.0f);
                 }
             }
         }
@@ -466,7 +503,7 @@ void Scene_Play::sCollision() {
                     m_playerArrows += 3; // Otherwise, add 3 arrows
                 }
                 pu->destroy(); // Destroy the power-up
-                std::cout << "Collected Bottle Power-Up. Arrows: " << m_playerArrows << std::endl;
+                setMessage("Collected Arrow Power-Up", 2.0f);
             }
         }
 
@@ -481,9 +518,10 @@ void Scene_Play::sCollision() {
                     playerLifespan.remaining++;
                 }
                 f->destroy(); // Destroy the power-up
-                std::cout << "Collected Fruit Power-Up. Lifespan: " << playerLifespan.remaining << std::endl;
+                setMessage("Collected Life Power-Up", 2.0f);
             }
         }
+
 
         // Check collision with enemy bullets
         for (auto eb : enemyBullets) {
@@ -554,7 +592,8 @@ void Scene_Play::sCollision() {
                 auto overlap = Physics::getOverlap(e, b);
                 if (overlap.x > 0 && overlap.y > 0) {
                     auto& enemyHealth = e->getComponent<CHealth>();
-                    enemyHealth.remaining -= 20; // Reduce health
+                    enemyHealth.remaining -= 10; // Reduce health
+                    enemyHealth.hurtTimer = 1.0f; // Set hurt timer 
                     if (enemyHealth.remaining <= 0) {
                         // Enemy dies
                         e->destroy();
@@ -628,7 +667,8 @@ void Scene_Play::sCollision() {
             auto overlap = Physics::getOverlap(e, b);
             if (overlap.x > 0 && overlap.y > 0) {
                 auto& enemyHealth = e->getComponent<CHealth>();
-                enemyHealth.remaining -= 20; // Reduce health
+                enemyHealth.remaining -= 10; // Reduce health
+                enemyHealth.hurtTimer = 1.0f; // Set hurt timer 
                 if (enemyHealth.remaining <= 0) {
                     // Capture the position before destroying the enemy
                     Vec2 position = e->getComponent<CTransform>().pos;
@@ -646,7 +686,6 @@ void Scene_Play::sCollision() {
             }
         }
     }
-    
 
     // Player collision with enemies
     for (auto p : players) {
@@ -654,39 +693,53 @@ void Scene_Play::sCollision() {
             auto overlap = Physics::getOverlap(p, e);
             if (overlap.x > 0 && overlap.y > 0) {
                 auto& playerLifespan = p->getComponent<CLifespan>();
-                playerLifespan.remaining--;
+                auto& playerInput = p->getComponent<CInput>();
 
-                if (playerLifespan.remaining <= 0) {
-                    p->destroy();
-                    onEnd();
-                }
-                else {
-                    p->getComponent<CTransform>().vel.y = 5.f;
-                    p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("PlayerHurt");
+                // Check if the invincibility timer has expired
+                if (playerInput.invincibilityTimer <= 0) {
+                    playerLifespan.remaining--;
+                    playerInput.invincibilityTimer = 1.0f;
+
+                    if (playerLifespan.remaining <= 0) {
+                        p->destroy();
+                        onEnd();
+                    }
+                    else {
+                        // Apply knockback effect
+                        p->getComponent<CTransform>().vel.y = 5.f;
+                        p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("PlayerHurt");
+                    }
                 }
             }
         }
     }
 
-	// Player collision with stronger enemies
+    // Player collision with stronger enemies
+    for (auto p : players) {
+        for (auto e : strongerEnemies) {
+            auto overlap = Physics::getOverlap(p, e);
+            if (overlap.x > 0 && overlap.y > 0) {
+                auto& playerLifespan = p->getComponent<CLifespan>();
+                auto& playerInput = p->getComponent<CInput>();
 
-	for (auto p : players) {
-		for (auto e : strongerEnemies) {
-			auto overlap = Physics::getOverlap(p, e);
-			if (overlap.x > 0 && overlap.y > 0) {
-				auto& playerLifespan = p->getComponent<CLifespan>();
-				playerLifespan.remaining--;
-				if (playerLifespan.remaining <= 0) {
-					p->destroy();
-					onEnd();
-				}
-				else {
-					p->getComponent<CTransform>().vel.y = 5.f;
-					p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("PlayerHurt");
-				}
-			}
-		}
-	}
+                // Check if the invincibility timer has expired
+                if (playerInput.invincibilityTimer <= 0) {
+                    playerLifespan.remaining--;
+                    playerInput.invincibilityTimer = 1.0f;
+
+                    if (playerLifespan.remaining <= 0) {
+                        p->destroy();
+                        onEnd();
+                    }
+                    else {
+                        // Apply knockback effect
+                        p->getComponent<CTransform>().vel.y = 5.f;
+                        p->getComponent<CAnimation>().animation = m_game->assets().getAnimation("PlayerHurt");
+                    }
+                }
+            }
+        }
+    }
 }
 
 void Scene_Play::sDoAction(const Action& action) {
@@ -742,6 +795,7 @@ void Scene_Play::sDoAction(const Action& action) {
                 m_doorOpened = true; // Set the door as opened
                 m_door->getComponent<CAnimation>().animation = m_game->assets().getAnimation("DoorTotalOpen"); // Change door animation to open
                 std::cout << "Door opened." << std::endl;
+                checkWinCondition(); // Check win condition after opening the door
             }
         }
     }
@@ -756,14 +810,31 @@ void Scene_Play::sDoAction(const Action& action) {
 }
 
 void Scene_Play::sAnimation() {
-    // m_player->getComponent<CAnimation>().animation.update();
-
     for (auto e : m_entityManager.getEntities()) {
         auto& anim = e->getComponent<CAnimation>();
         if (anim.has) {
             anim.animation.update(anim.repeat);
             if (anim.animation.hasEnded())
                 e->destroy();
+        }
+
+        // Check if the entity has a health component and update the hurt timer
+        if (e->hasComponent<CHealth>()) {
+            auto& health = e->getComponent<CHealth>();
+            if (health.hurtTimer > 0) {
+                health.hurtTimer -= m_game->deltaTime();
+                if (health.hurtTimer <= 0) {
+                    // Revert to the original animation after the hurt timer expires
+                    if (e->hasComponent<CAnimation>()) {
+                        if (e->getComponent<CAnimation>().animation.getName() == "ArcherHurt") {
+                            e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("StrongerEnemy");
+                        }
+                        else {
+                            e->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Enemy");
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -873,23 +944,50 @@ void Scene_Play::drawArrowsCounter()
 
 void Scene_Play::drawWinScreen()
 {
-    sf::Text gameOverText;
-    gameOverText.setFont(m_game->assets().getFont("Arial"));
-    gameOverText.setCharacterSize(50);
-    gameOverText.setFillColor(sf::Color::White);
-    gameOverText.setString("YOU WIN!");
-    gameOverText.setPosition(m_game->window().getSize().x / 2 - 100, 100);
-    m_game->window().draw(gameOverText);
+    // Stop background music and play victory sound
+    m_backgroundMusic.stop();
+    m_victorySound.setBuffer(m_game->assets().getSound("Victory"));
+    m_victorySound.play();
 
-    
+    m_backgroundSprite.setPosition(0, 0);
+    m_game->window().draw(m_backgroundSprite);
+
+    // Title text
+    sf::Text titleText;
+    titleText.setFont(m_game->assets().getFont("Bungee"));
+    titleText.setCharacterSize(60);
+    titleText.setFillColor(sf::Color(255, 215, 0)); // Gold color
+    titleText.setString("You Win!");
+    titleText.setPosition(100, 50); // Set the position explicitly
+
+    // Main message text
+    sf::Text gameOverText;
+    gameOverText.setFont(m_game->assets().getFont("Bungee"));
+    gameOverText.setCharacterSize(40);
+    gameOverText.setFillColor(sf::Color::White);
+    gameOverText.setString("You have saved your culture and language\nby collecting the ancient book and the gold.");
+    gameOverText.setPosition(100, 150); // Set the position explicitly
+
+    // Options text
     sf::Text options;
-    options.setFont(m_game->assets().getFont("Arial"));
+    options.setFont(m_game->assets().getFont("Bungee"));
     options.setCharacterSize(30);
     options.setFillColor(sf::Color::Yellow);
     options.setString("1 - Level 2\n2 - Menu\n3 - Restart Level 1");
-    options.setPosition(m_game->window().getSize().x / 2 - 100, 200);
+    options.setPosition(100, 300); // Set the position explicitly
+
+    // Draw all texts
+    m_game->window().draw(titleText);
+    m_game->window().draw(gameOverText);
     m_game->window().draw(options);
 
+    // Add a celebratory icon (e.g., a trophy)
+    sf::Sprite trophySprite;
+    trophySprite.setTexture(m_game->assets().getTexture("Trophy"));
+    trophySprite.setPosition(500, 50); // Set the position explicitly
+    m_game->window().draw(trophySprite);
+
+    // Display the window
     m_game->window().display();
 }
 
@@ -921,7 +1019,7 @@ void Scene_Play::loadLevel(const std::string& path) {
     spawnPowerUp(Vec2(120, 100), "Bottle");
     spawnPowerUp(Vec2(320, 300), "Fruit");
 
-    Vec2 doorPosition = Vec2(2500, 300); 
+    Vec2 doorPosition = Vec2(2500, 312); 
     spawnDoor(doorPosition);
     
 	spawnStrongerEnemy(m_strongerEnemyConfigs);
@@ -1125,18 +1223,14 @@ bool Scene_Play::checkPlatformEdge(std::shared_ptr<Entity> enemy) {
 void Scene_Play::checkWinCondition() {
     if (m_hasEnded) return;
 
-    auto enemies = m_entityManager.getEntities("enemy");
+    // Check if all coins are collected
+    bool allCoinsCollected = (collectedCoins >= totalCoins);
 
-    
-    bool allEnemiesDefeated = true;
-    for (auto& enemy : enemies) {
-        if (enemy->getComponent<CHealth>().remaining > 0) {
-            allEnemiesDefeated = false;
-            break; 
-        }
-    }
+    // Check if the door is opened
+    bool doorOpened = m_doorOpened;
 
-    if (allEnemiesDefeated && collectedCoins >= totalCoins) {
+    // Player wins if all coins are collected and the door is opened
+    if (allCoinsCollected && doorOpened ) {
         m_hasEnded = true;
         drawWinScreen();
     }
@@ -1149,7 +1243,7 @@ void Scene_Play::spawnEnemy(const std::vector<EnemyConfig>& configs) {
         enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
         enemy->addComponent<CState>();
         enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
-        enemy->addComponent<CHealth>(100);
+        enemy->addComponent<CHealth>(100); // Set maximum health
         enemy->addComponent<CAttackTimer>(1.0f);
 
         Vec2 pos = gridToMidPixel(config.X, config.Y, enemy);
@@ -1366,25 +1460,29 @@ void Scene_Play::spawnDoor(const Vec2& position) {
 }
 
 void Scene_Play::spawnStrongerEnemy(const std::vector<EnemyConfig>& configs) {
-	for (const auto& config : configs) {
-		auto enemy = m_entityManager.addEntity("stronger_enemy");
-		enemy->addComponent<CAnimation>(m_game->assets().getAnimation("StrongerEnemy"), true);
-		enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
-		enemy->addComponent<CState>();
-		enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
-		enemy->addComponent<CHealth>(100);
-		enemy->addComponent<CAttackTimer>(0.5f);
-		Vec2 pos = gridToMidPixel(config.X, config.Y, enemy);
-		std::cout << "Converted position: " << pos.x << ", " << pos.y << std::endl;
-		enemy->addComponent<CTransform>(pos);
-		auto& transform = enemy->getComponent<CTransform>();
-		transform.vel.x = config.SPEED;
-		transform.vel.y = config.GRAVITY;
-		std::cout << "Spawned stronger enemy at: " << config.X << ", " << config.Y
-			<< " with weapon: " << config.WEAPON << std::endl;
-		// Store the respawn point for the stronger enemy
+    for (const auto& config : configs) {
+        auto enemy = m_entityManager.addEntity("stronger_enemy");
+        enemy->addComponent<CAnimation>(m_game->assets().getAnimation("StrongerEnemy"), true);
+        enemy->addComponent<CBoundingBox>(Vec2(config.CW, config.CH));
+        enemy->addComponent<CState>();
+        enemy->addComponent<CPlatformInfo>(config.platformStartX, config.platformEndX);
+        enemy->addComponent<CHealth>(100); // Set maximum health
+        enemy->addComponent<CAttackTimer>(0.5f);
+
+        Vec2 pos = gridToMidPixel(config.X, config.Y, enemy);
+        std::cout << "Converted position: " << pos.x << ", " << pos.y << std::endl;
+        enemy->addComponent<CTransform>(pos);
+
+        auto& transform = enemy->getComponent<CTransform>();
+        transform.vel.x = config.SPEED;
+        transform.vel.y = config.GRAVITY;
+
+        std::cout << "Spawned stronger enemy at: " << config.X << ", " << config.Y
+            << " with weapon: " << config.WEAPON << std::endl;
+
+        // Store the respawn point for the stronger enemy
         m_enemyRespawnPoints[enemy] = pos;
-	}
+    }
 }
 
 void Scene_Play::spawnChest(const Vec2& position) {
@@ -1480,3 +1578,54 @@ void Scene_Play::sStrongerEnemyBehavior() {
     }
 }
 
+void Scene_Play::setMessage(const std::string& message, float duration) {
+    m_message = message;
+    m_messageDuration = duration;
+}
+
+void Scene_Play::drawMessage() {
+    if (m_messageDuration > 0) {
+        m_messageText.setString(m_message);
+
+        // Get the current view's center
+        sf::Vector2f viewCenter = m_game->window().getView().getCenter();
+        sf::Vector2f viewSize = m_game->window().getView().getSize();
+
+        // Set the position relative to the view's center
+        m_messageText.setPosition(viewCenter.x - viewSize.x / 2 + 390, viewCenter.y + viewSize.y / 2 - 730);
+
+        // Retrieve the shader from the assets
+        sf::Shader& shader = const_cast<sf::Shader&>(m_game->assets().getShader("Gradient"));
+
+        // Define the gradient colors
+        sf::Color topColor = sf::Color(255, 215, 0); // Gold color
+        sf::Color bottomColor = sf::Color(255, 100, 0); // Red color
+
+        // Draw the gradient text with specified colors
+        drawGradientText(m_game->window(), m_messageText, topColor, bottomColor, shader);
+    }
+}
+
+void Scene_Play::clearMessage() {
+    m_message.clear();
+    m_messageDuration = 0.f;
+}
+
+static void drawGradientText(sf::RenderWindow& window, sf::Text& text, const sf::Color& gradientTop, const sf::Color& gradientBottom, sf::Shader& shader) {
+    sf::String string = text.getString();
+    float charHeight = text.getCharacterSize();
+    sf::Vector2f position = text.getPosition();
+
+    for (size_t i = 0; i < string.getSize(); ++i) {
+        sf::Text character = text;
+        character.setString(string[i]);
+
+        // Set the gradient colors
+        shader.setUniform("topColor", sf::Glsl::Vec4(gradientTop));
+        shader.setUniform("bottomColor", sf::Glsl::Vec4(gradientBottom));
+
+        character.setPosition(position.x + text.findCharacterPos(i).x - text.findCharacterPos(0).x, position.y);
+
+        window.draw(character, &shader);
+    }
+}
